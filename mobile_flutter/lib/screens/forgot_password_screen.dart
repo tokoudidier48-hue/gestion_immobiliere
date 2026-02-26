@@ -104,7 +104,7 @@ class ForgotPasswordScreen extends StatelessWidget {
               child: TextField(
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.person, color: Colors.grey),
-                  hintText: "Ex: loyasmart@exemple.com",
+                  hintText: "Votre email ou Téléphone",
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(vertical: 20),
