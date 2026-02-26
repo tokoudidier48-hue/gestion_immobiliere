@@ -195,7 +195,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/home');
+                      // TODO: Implement home screen navigation
+                      // Navigator.pushReplacementNamed(context, '/home');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Connexion réussie!')),
+                      );
                     },
                     icon: const Icon(Icons.login),
                     label: const Text(

@@ -181,7 +181,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/home');
+                      // TODO: Implement home screen navigation
+                      // Navigator.pushReplacementNamed(context, '/home');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Inscription réussie!')),
+                      );
                     },
                     child: const Text(
                       "S'inscrire",
