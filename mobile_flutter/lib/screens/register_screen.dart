@@ -9,8 +9,43 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   String role = "Locataire";
+
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
+
+  final FocusNode nomFocus = FocusNode();
+  final FocusNode prenomFocus = FocusNode();
+  final FocusNode emailFocus = FocusNode();
+  final FocusNode phoneFocus = FocusNode();
+  final FocusNode passwordFocus = FocusNode();
+  final FocusNode confirmPasswordFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+
+    for (var node in [
+      nomFocus,
+      prenomFocus,
+      emailFocus,
+      phoneFocus,
+      passwordFocus,
+      confirmPasswordFocus
+    ]) {
+      node.addListener(() => setState(() {}));
+    }
+  }
+
+  @override
+  void dispose() {
+    nomFocus.dispose();
+    prenomFocus.dispose();
+    emailFocus.dispose();
+    phoneFocus.dispose();
+    passwordFocus.dispose();
+    confirmPasswordFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +63,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(Icons.arrow_back_ios_new),
                       onPressed: () => Navigator.pop(context),
                     ),
                     const Expanded(
@@ -36,7 +71,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         "Inscription",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -47,7 +82,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 20),
 
-                /// 📝 Title
                 const Text(
                   "Créer un compte",
                   style: TextStyle(
@@ -59,13 +93,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
 
                 const Text(
-                  "Gérez vos biens avec des prévisions de paiement par IA.",
+                  "Commencez à gérer vos biens intelligemment.",
                   style: TextStyle(color: Colors.grey),
                 ),
 
                 const SizedBox(height: 30),
 
-                /// 👤 Role selector
                 const Text(
                   "Je suis un :",
                   style: TextStyle(
@@ -77,11 +110,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 10),
 
                 Container(
-                  height: 50,
+                  height: 52,
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [
@@ -93,49 +126,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 25),
 
-                /// 👤 Nom + Prénom
                 Row(
                   children: [
-                    Expanded(child: _inputField("Nom", "Ex: Dossou")),
-                    const SizedBox(width: 12),
-                    Expanded(child: _inputField("Prénom", "Ex: Marc")),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                /// 📧 Email
-                _inputField("Email", "votre@email.com"),
-
-                const SizedBox(height: 16),
-
-                /// 📞 Téléphone
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Téléphone",
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    Expanded(
+                      child: _animatedField(
+                        label: "Nom",
+                        hint: "Nom",
+                        icon: Icons.badge_outlined,
+                        focusNode: nomFocus,
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        prefixIcon: Container(
-                          width: 70,
-                          alignment: Alignment.center,
-                          child: const Text(
-                            "+229",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        hintText: "01 02 03 04",
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _animatedField(
+                        label: "Prénom",
+                        hint: "Prénom",
+                        icon: Icons.person_outline,
+                        focusNode: prenomFocus,
                       ),
                     ),
                   ],
@@ -143,9 +150,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 16),
 
-                /// 🔒 Mot de passe
-                _passwordField(
+                _animatedField(
+                  label: "Email",
+                  hint: "votre@email.com",
+                  icon: Icons.email_outlined,
+                  focusNode: emailFocus,
+                ),
+
+                const SizedBox(height: 16),
+
+                _animatedField(
+                  label: "Téléphone",
+                  hint: "01 02 03 04",
+                  icon: Icons.phone_outlined,
+                  focusNode: phoneFocus,
+                  prefixText: "+229",
+                ),
+
+                const SizedBox(height: 16),
+
+                _animatedField(
                   label: "Mot de passe",
+                  hint: "••••••••",
+                  icon: Icons.lock_outline,
+                  focusNode: passwordFocus,
+                  isPassword: true,
                   obscure: obscurePassword,
                   onToggle: () {
                     setState(() {
@@ -156,9 +185,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 16),
 
-                /// 🔐 Confirmation
-                _passwordField(
+                _animatedField(
                   label: "Confirmer le mot de passe",
+                  hint: "••••••••",
+                  icon: Icons.lock_reset,
+                  focusNode: confirmPasswordFocus,
+                  isPassword: true,
                   obscure: obscureConfirmPassword,
                   onToggle: () {
                     setState(() {
@@ -169,7 +201,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 25),
 
-                /// 🔥 Bouton Inscription
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -177,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF137FEC),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     onPressed: () {
@@ -195,14 +226,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 30),
 
-                /// 🌐 Social login
                 const Center(
                   child: Text(
                     "Ou continuer avec",
                     style: TextStyle(
                       color: Colors.grey,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
                 ),
@@ -211,17 +240,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 Row(
                   children: [
-                    _socialButton(Icons.g_mobiledata),
-                    const SizedBox(width: 10),
-                    _socialButton(Icons.facebook),
-                    const SizedBox(width: 10),
-                    _socialButton(Icons.alternate_email),
+                    _socialButton("assets/images/google.png"),
+                    const SizedBox(width: 12),
+                    _socialButton("assets/images/facebook.png"),
+                    const SizedBox(width: 12),
+                    _socialButton("assets/images/twitter.png"),
                   ],
                 ),
 
                 const SizedBox(height: 25),
 
-                /// 🔁 Login link
                 Center(
                   child: GestureDetector(
                     onTap: () {
@@ -246,23 +274,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  /// 👤 Role Button
   Widget _roleButton(String value) {
     final bool selected = role == value;
 
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            role = value;
-          });
-        },
+        onTap: () => setState(() => role = value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Text(
             value,
@@ -278,54 +301,62 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  /// 🧾 Input Field
-  Widget _inputField(String label, String hint) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        TextField(
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 🔒 Password Field
-  Widget _passwordField({
+  Widget _animatedField({
     required String label,
-    required bool obscure,
-    required VoidCallback onToggle,
+    required String hint,
+    required IconData icon,
+    required FocusNode focusNode,
+    bool isPassword = false,
+    bool obscure = false,
+    VoidCallback? onToggle,
+    String? prefixText,
   }) {
+    final bool isFocused = focusNode.hasFocus;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
-        TextField(
-          obscureText: obscure,
-          decoration: InputDecoration(
-            hintText: "••••••••",
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
+
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isFocused
+                  ? const Color(0xFF137FEC)
+                  : Colors.grey.shade300,
+              width: isFocused ? 2 : 1,
             ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                obscure ? Icons.visibility : Icons.visibility_off,
-              ),
-              onPressed: onToggle,
+          ),
+          child: TextField(
+            focusNode: focusNode,
+            obscureText: isPassword ? obscure : false,
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: prefixText != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Text(
+                        prefixText,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  : Icon(icon),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        obscure
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: onToggle,
+                    )
+                  : null,
             ),
           ),
         ),
@@ -333,17 +364,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  /// 🌐 Social Button
-  Widget _socialButton(IconData icon) {
+  Widget _socialButton(String assetPath) {
     return Expanded(
       child: Container(
         height: 55,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade300),
         ),
-        child: Icon(icon, size: 28),
+        child: Center(
+          child: Image.asset(
+            assetPath,
+            width: 26,
+            height: 26,
+          ),
+        ),
       ),
     );
   }
