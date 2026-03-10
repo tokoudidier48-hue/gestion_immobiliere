@@ -1,16 +1,114 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-class ForgotPasswordScreen extends StatelessWidget {
+class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
+
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final TextEditingController inputController = TextEditingController();
+
+  bool isLoading = false;
+
+  /// ⚠️ Ton API via ngrok
+  final String baseUrl =
+      "https://eulah-unconsoling-elliott.ngrok-free.dev/api/utilisateurs";
+
+  /// ===============================
+  /// ENVOYER LE CODE OTP
+  /// ===============================
+  Future<void> sendCode() async {
+    String input = inputController.text.trim();
+
+    if (input.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez entrer votre email")),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    Map<String, dynamic> body = {};
+
+    /// Si c'est un email
+    if (input.contains("@")) {
+      body["email"] = input;
+    } else {
+      body["telephone"] = input;
+    }
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/forgot-password/"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data["detail"] ?? "Code OTP envoyé"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        /// Aller vers l'écran vérification OTP
+        Navigator.pushNamed(context, '/verify-code', arguments: input);
+      } else {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data["detail"] ?? "Erreur lors de l'envoi du code"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Impossible de contacter le serveur"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    inputController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F8), // background-light
+      backgroundColor: const Color(0xFFF6F7F8),
       body: SafeArea(
         child: Column(
           children: [
-            /// 🔝 Top App Bar / Navigation
+            /// HEADER
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(
@@ -50,7 +148,7 @@ class ForgotPasswordScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            /// 🖼 Icon
+            /// ICON
             Center(
               child: Container(
                 height: 96,
@@ -69,22 +167,19 @@ class ForgotPasswordScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            /// 📝 Title & Description
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+            /// TITRE
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28),
               child: Column(
-                children: const [
+                children: [
                   Text(
                     "Mot de passe oublié",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 12),
                   Text(
-                    "Entrez votre email ou numéro de téléphone pour réinitialiser votre mot de passe",
+                    "Entrez votre email pour recevoir un code OTP",
                     style: TextStyle(
                       fontSize: 15,
                       color: Colors.grey,
@@ -98,13 +193,14 @@ class ForgotPasswordScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            /// 📝 Form Input
+            /// INPUT
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: TextField(
+                controller: inputController,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.person, color: Colors.grey),
-                  hintText: "Ex: loyasmart@exemple.com",
+                  hintText: "Votre email",
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(vertical: 20),
@@ -114,12 +210,17 @@ class ForgotPasswordScreen extends StatelessWidget {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(color: Colors.grey, width: 0.5),
+                    borderSide: const BorderSide(
+                      color: Colors.grey,
+                      width: 0.5,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
-                    borderSide:
-                        const BorderSide(color: Color(0xFF137FEC), width: 2),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF137FEC),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -127,14 +228,11 @@ class ForgotPasswordScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            /// 🔘 Envoyer le code Button
+            /// BOUTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: ElevatedButton(
-                onPressed: () {
-                  // 🔜 Navigation vers CodeVerificationScreen
-                  Navigator.pushNamed(context, '/verify-code');
-                },
+                onPressed: isLoading ? null : sendCode,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF137FEC),
                   minimumSize: const Size(double.infinity, 56),
@@ -143,20 +241,22 @@ class ForgotPasswordScreen extends StatelessWidget {
                   ),
                   elevation: 6,
                 ),
-                child: const Text(
-                  "Envoyer le code",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "Envoyer le code",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
 
             const Spacer(),
 
-            /// 🔗 Footer link
+            /// LOGIN LINK
             Padding(
               padding: const EdgeInsets.only(bottom: 24),
               child: Row(

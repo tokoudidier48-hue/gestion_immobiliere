@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../screens/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final void Function(String email, String password, String role)? onRegister;
+
+  const RegisterScreen({super.key, this.onRegister});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -12,6 +15,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
+  bool isLoading = false;
+
+  final ApiService api = ApiService();
 
   final FocusNode nomFocus = FocusNode();
   final FocusNode prenomFocus = FocusNode();
@@ -20,10 +26,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final FocusNode passwordFocus = FocusNode();
   final FocusNode confirmPasswordFocus = FocusNode();
 
+  final TextEditingController nomController = TextEditingController();
+  final TextEditingController prenomController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
-
     for (var node in [
       nomFocus,
       prenomFocus,
@@ -44,11 +56,91 @@ class _RegisterScreenState extends State<RegisterScreen> {
     phoneFocus.dispose();
     passwordFocus.dispose();
     confirmPasswordFocus.dispose();
+
+    nomController.dispose();
+    prenomController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+
     super.dispose();
+  }
+
+  // =========================
+  // REGISTER FUNCTION
+  // =========================
+  Future<void> register() async {
+
+    if (nomController.text.isEmpty ||
+        prenomController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        phoneController.text.isEmpty ||
+        passwordController.text.isEmpty ||
+        confirmPasswordController.text.isEmpty) {
+      _showError("Tous les champs sont obligatoires");
+      return;
+    }
+
+    if (!emailController.text.contains("@")) {
+      _showError("Email invalide");
+      return;
+    }
+
+    if (phoneController.text.length < 8) {
+      _showError("Numéro de téléphone invalide");
+      return;
+    }
+
+    if (passwordController.text.length < 6) {
+      _showError("Mot de passe minimum 6 caractères");
+      return;
+    }
+
+    if (passwordController.text != confirmPasswordController.text) {
+      _showError("Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    bool success = await api.register(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+      nomController.text.trim(),
+      prenomController.text.trim(),
+      phoneController.text.trim(),
+      role,
+    );
+
+    setState(() => isLoading = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Inscription réussie 🎉"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushReplacementNamed(context, '/login');
+    } else {
+      _showError("Erreur lors de l'inscription");
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7F8),
       body: SafeArea(
@@ -59,7 +151,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                /// 🔙 Header
                 Row(
                   children: [
                     IconButton(
@@ -84,10 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const Text(
                   "Créer un compte",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 6),
@@ -101,10 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const Text(
                   "Je suis un :",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
 
                 const SizedBox(height: 10),
@@ -119,7 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Row(
                     children: [
                       _roleButton("Locataire"),
-                      _roleButton("Propriétaire"),
+                      _roleButton("Proprietaire"),
                     ],
                   ),
                 ),
@@ -134,6 +219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         hint: "Nom",
                         icon: Icons.badge_outlined,
                         focusNode: nomFocus,
+                        controller: nomController,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -143,6 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         hint: "Prénom",
                         icon: Icons.person_outline,
                         focusNode: prenomFocus,
+                        controller: prenomController,
                       ),
                     ),
                   ],
@@ -155,16 +242,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: "votre@email.com",
                   icon: Icons.email_outlined,
                   focusNode: emailFocus,
+                  controller: emailController,
                 ),
 
                 const SizedBox(height: 16),
 
                 _animatedField(
                   label: "Téléphone",
-                  hint: "01 02 03 04",
+                  hint: "97000000",
                   icon: Icons.phone_outlined,
                   focusNode: phoneFocus,
-                  prefixText: "+229",
+                  controller: phoneController,
+                  prefixText: "+229 ",
                 ),
 
                 const SizedBox(height: 16),
@@ -174,6 +263,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: "••••••••",
                   icon: Icons.lock_outline,
                   focusNode: passwordFocus,
+                  controller: passwordController,
                   isPassword: true,
                   obscure: obscurePassword,
                   onToggle: () {
@@ -190,6 +280,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: "••••••••",
                   icon: Icons.lock_reset,
                   focusNode: confirmPasswordFocus,
+                  controller: confirmPasswordController,
                   isPassword: true,
                   obscure: obscureConfirmPassword,
                   onToggle: () {
@@ -211,16 +302,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/home');
-                    },
-                    child: const Text(
-                      "S'inscrire",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    onPressed: isLoading ? null : register,
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            "S'inscrire",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
 
@@ -229,10 +320,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const Center(
                   child: Text(
                     "Ou continuer avec",
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ),
 
@@ -276,7 +364,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _roleButton(String value) {
     final bool selected = role == value;
-
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => role = value),
@@ -291,9 +378,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             value,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: selected
-                  ? const Color(0xFF137FEC)
-                  : Colors.grey,
+              color: selected ? const Color(0xFF137FEC) : Colors.grey,
             ),
           ),
         ),
@@ -306,6 +391,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String hint,
     required IconData icon,
     required FocusNode focusNode,
+    TextEditingController? controller,
     bool isPassword = false,
     bool obscure = false,
     VoidCallback? onToggle,
@@ -318,21 +404,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
-
         AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isFocused
-                  ? const Color(0xFF137FEC)
-                  : Colors.grey.shade300,
+              color: isFocused ? const Color(0xFF137FEC) : Colors.grey.shade300,
               width: isFocused ? 2 : 1,
             ),
           ),
           child: TextField(
             focusNode: focusNode,
+            controller: controller,
             obscureText: isPassword ? obscure : false,
             decoration: InputDecoration(
               hintText: hint,
@@ -350,10 +434,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               suffixIcon: isPassword
                   ? IconButton(
                       icon: Icon(
-                        obscure
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
+                          obscure ? Icons.visibility : Icons.visibility_off),
                       onPressed: onToggle,
                     )
                   : null,
