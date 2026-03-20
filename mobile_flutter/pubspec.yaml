@@ -47,7 +47,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter_launcher_icons: 
-    image_path: "assets/images/loyerSmart.png"
+    image_path: "assets/images/LoyerSmart .png"
     android: "android"
     ios: true
     background_color: "#00000000"

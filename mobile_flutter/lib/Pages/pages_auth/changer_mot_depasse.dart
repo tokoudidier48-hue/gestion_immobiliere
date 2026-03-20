@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:mobile_flutter/widgets/changer_mot_passe.dart';
 
 class ResetPasswordPage extends StatefulWidget {
@@ -155,6 +156,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("Les mots de passe ne correspondent pas"),
+                        ),
+                      );
+                    }else{
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Mot de passe réinitialisé avec succès"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      Navigator.push(
+                        context, 
+                        MaterialPageRoute(
+                          builder: (_) =>  Connexion(),
                         ),
                       );
                     }

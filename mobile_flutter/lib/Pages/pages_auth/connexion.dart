@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_auth/mot_de_passe_oublier.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/Pages/pages_auth/inscription.dart';
@@ -117,7 +118,14 @@ class _ConnexionState extends State<Connexion> {
               Row(
                 children: [
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordPage(),
+                        ),
+                      );
+                    },
                     child: const Text("Mot de passe oublié ?"),
                   ),
                 ],

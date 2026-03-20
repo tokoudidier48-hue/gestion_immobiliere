@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_auth/changer_mot_depasse.dart';
 import 'package:mobile_flutter/widgets/otp.dart';
 
 class VerificationPage extends StatelessWidget {
@@ -139,7 +140,14 @@ class VerificationPage extends StatelessWidget {
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>  ResetPasswordPage(),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             elevation: 5,
                             backgroundColor: Color(0xFF4A90E2),
