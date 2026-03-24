@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
+import 'package:mobile_flutter/service/local_storage.dart';
 import 'package:mobile_flutter/widgets/onboarding.dart';
 
 class OnboarningPages extends StatefulWidget {
@@ -112,7 +113,7 @@ class _OnboarningPagesState extends State<OnboarningPages> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async{
                       if (currentPage < data.length - 1) {
                         _controller.nextPage(
                           duration: Duration(milliseconds: 300),
@@ -120,6 +121,7 @@ class _OnboarningPagesState extends State<OnboarningPages> {
                         );
                       } else {
                         // FIN onboarding
+                        await LocalStorage.setFirstLaunch(false);
                         Navigator.push(
                           context,
                           MaterialPageRoute(

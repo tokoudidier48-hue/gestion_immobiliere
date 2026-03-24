@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/model/utilisateur.dart';
 import 'package:mobile_flutter/service/api.dart';
+import 'package:mobile_flutter/service/local_storage.dart';
 
 class UtilisateurProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -18,6 +18,12 @@ class UtilisateurProvider with ChangeNotifier {
 
   void clearError() {
     _error = null;
+    notifyListeners();
+  }
+
+  Future<void> init() async {
+    _token = await LocalStorage.getToken();
+    print("Token récupéré au lancement : $_token");
     notifyListeners();
   }
 
@@ -51,6 +57,7 @@ class UtilisateurProvider with ChangeNotifier {
       final response = await _apiService.login(email, password);
       if (response.statusCode == 200) {
         _token = response.data['token'] ?? response.data['access'];
+        await LocalStorage.saveToken(_token!);
         _user = Utilisateur.fromJson(response.data['user'] ?? response.data);
         _apiService.setToken(_token!);
         return true;
@@ -66,10 +73,12 @@ class UtilisateurProvider with ChangeNotifier {
     }
   }
 
-  void logout() {
+  void logout() async {
     _user = null;
     _token = null;
     _error = null;
+    await LocalStorage.saveToken('');
+    await LocalStorage.setFirstLaunch(false);
     _apiService.clearToken();
     notifyListeners();
   }

@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/accueil_locataire.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/Pages/pages_auth/home.dart';

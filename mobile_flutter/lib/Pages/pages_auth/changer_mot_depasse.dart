@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
+import 'package:mobile_flutter/service/api.dart';
 import 'package:mobile_flutter/widgets/changer_mot_passe.dart';
 
 class ResetPasswordPage extends StatefulWidget {
-  const ResetPasswordPage({super.key});
+  final String email;
+
+  const ResetPasswordPage({super.key, required this.email});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -151,29 +154,43 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                   )),
-                  onPressed: () {
+                  onPressed: () async {
                     if (passwordController.text != confirmController.text) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("Les mots de passe ne correspondent pas"),
                         ),
                       );
-                    }else{
+                      return;
+                    }
+
+                    try {
+                      await ApiService().changePassword(
+                        widget.email,
+                        passwordController.text,
+                      );
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("Mot de passe réinitialisé avec succès"),
                           backgroundColor: Colors.green,
                         ),
                       );
-                      Navigator.push(
-                        context, 
-                        MaterialPageRoute(
-                          builder: (_) =>  Connexion(),
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => Connexion()),
+                      );
+
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString()),
+                          backgroundColor: Colors.red,
                         ),
                       );
                     }
-                  },
-                  child: const Text(
+                  },                  child: const Text(
                     "Réinitialiser",
                     style: TextStyle(fontSize: 16,color: Colors.white),
                   ),

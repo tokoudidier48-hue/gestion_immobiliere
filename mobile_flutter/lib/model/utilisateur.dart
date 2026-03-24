@@ -22,28 +22,29 @@ class Utilisateur {
 
   // Convertir Json en model
   factory Utilisateur.fromJson(Map<String, dynamic> json) {
-    return Utilisateur(
-      id: json['id'],
-      role: json['role'],
-      name: json['name'],
-      lastName: json['last_name'],
-      email: json['email'],
-      phoneNumber: json['phone_number'],
-      password: json['password'] ?? '',
-      confirmPassword: json['confirmPassword'] ?? '',
-    );
-  }
+  return Utilisateur(
+    id: json['id'],
+    role: json['role'],
+    name: json['first_name'] ?? '',
+    lastName: json['last_name'],
+    email: json['email'],
+    phoneNumber: json['telephone'], // ✅ cohérent avec backend
+    password: '',
+    confirmPassword: '',
+  );
+}
 
   // Convertir model en Json
   Map<String, dynamic> toJson() {
-    return {
-      'role': role,
-      'name': name,
-      'last_name': lastName,
-      'email': email,
-      'phone_number': phoneNumber,
-      'password': password,
-    };
-  }
+  return {
+    'role': role,
+    'first_name': name,
+    'last_name': lastName,
+    'email': email,
+    'telephone': phoneNumber,        // ✅ corriger ici
+    'password': password,
+    'password2': confirmPassword,    // ✅ ajouter ceci
+  };
+}
 }
 

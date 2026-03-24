@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:mobile_flutter/Pages/pages_auth/verification.dart';
+import 'package:mobile_flutter/service/api.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -10,6 +12,14 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final TextEditingController emailController = TextEditingController();
+  bool isLoading = false; // 👉 à déclarer dans ton State
+  String? message;
+  bool isError = false;
+
+   //Nettoyage des erreurs
+  String cleanError(dynamic e) {
+  return e.toString().replaceFirst('Exception: ', '');
+  }
 
   @override
   void dispose() {
@@ -27,7 +37,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const Connexion()),
+          ),
         ),
         title: const Text(
           "RÉCUPÉRATION",
@@ -82,7 +95,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               /// SUBTITLE
               const Center(
                 child: Text(
-                  "Entrez votre email ou numéro de téléphone\npour réinitialiser votre mot de passe",
+                  "Entrez votre email pour réinitialiser votre mot de passe",
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -92,7 +105,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
               /// LABEL
               const Text(
-                "Email ou Numéro de téléphone",
+                "Email",
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
 
@@ -103,7 +116,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: "Ex: loyasmart@example.com",
+                  hintText: "loyasmart@example.com",
                   prefixIcon: const Icon(Icons.person_outline, color: Colors.blue),
                   filled: true,
                   fillColor: Colors.white,
@@ -123,46 +136,85 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 ),
               ),
 
-              const SizedBox(height: 25),
-
-              /// BUTTON
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    elevation: 6,
-                    shadowColor: Colors.blue.withOpacity(0.3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+              if (message != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    "Aucun compte trouvé avec cet email",
+                    style: TextStyle(
+                      color: isError ? Colors.red : Colors.green,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  onPressed: () {
-                    if (emailController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Veuillez entrer votre email"),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>  VerificationPage(),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    "Envoyer le code",
-                    style: TextStyle(fontSize: 16,color: Colors.white),
+                ],
+
+              const SizedBox(height: 25),
+
+
+              /// BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      elevation: 6,
+                      shadowColor: Colors.blue.withOpacity(0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            if (emailController.text.isEmpty) {
+                              setState(() {
+                                message = "Veuillez entrer votre email";
+                                isError = true;
+                              });
+                              return;
+                            }
+
+                            setState(() {
+                              isLoading = true;
+                              message = null;
+                            });
+
+                            try {
+                              final response = await ApiService()
+                                  .resetPassword(emailController.text.trim());
+
+                              setState(() {
+                                message = "Code envoyé avec succès";
+                                isError = false;
+                              });
+
+                              // 👉 Navigation (optionnel après succès)
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => VerificationPage(email: emailController.text.trim()),
+                                ),
+                              );
+
+                            } catch (e) {
+                              setState(() {
+                               message = cleanError(e);
+                                isError = true;
+                              });
+                            } finally {
+                              setState(() => isLoading = false);
+                            }
+                          },
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            "Envoyer le code",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 40),
+                              const SizedBox(height: 40),
 
               /// FOOTER
               Center(

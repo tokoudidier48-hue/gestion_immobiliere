@@ -50,8 +50,12 @@ Widget build(BuildContext context) {
       ),
       title: const Text(
         "Inscription",
-        style: TextStyle(color: Colors.black),
-      ),
+        style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
+    ),
       centerTitle: true,
     ),
     body: SingleChildScrollView(
@@ -155,7 +159,7 @@ Widget build(BuildContext context) {
                       child: customField(
                         controller: nameController,
                         icon: Icons.person,
-                        hint: "Ex: Dossou",
+                        hint: "Barack",
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -163,7 +167,7 @@ Widget build(BuildContext context) {
                       child: customField(
                         controller: lastnameController,
                         icon: Icons.person,
-                        hint: "Ex: Marc",
+                        hint: "Obama",
                       ),
                     ),
                   ],
@@ -172,7 +176,7 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 15),
                 customField(
                   controller: emailController,
-                  hint: "Ex:votre@gmail.com",
+                  hint: "votre@gmail.com",
                   icon: Icons.email,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -184,20 +188,18 @@ Widget build(BuildContext context) {
                     return null;
                   },
                 ),
-              
-
 
                 const SizedBox(height: 15),
 
                 customField(
                   controller: phonenumberController,
-                  hint: "+229 01 02 03 04",
+                  hint: " 01 02 03 04",
                   icon: Icons.phone,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Numéro requis";
                     }
-                    if (!value.startsWith("+229")) {
+                    if (value.length == 10 ) {
                       return "Numéro béninois invalide";
                     }
                     return null;

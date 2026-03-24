@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 
@@ -18,6 +19,10 @@ class Home extends StatelessWidget {
                 icon: const Icon(Icons.logout),
                 onPressed: () {
                   auth.logout();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const Connexion())
+                  );
                 },
               );
             },

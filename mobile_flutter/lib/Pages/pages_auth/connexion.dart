@@ -87,7 +87,7 @@ class _ConnexionState extends State<Connexion> {
               // Email / Téléphone
               Align(
                 alignment: Alignment.centerLeft,
-                child: const Text("E-mail ou Numéro de téléphone"),
+                child: const Text("E-mail"),
               ),
               const SizedBox(height: 5),
              customFieldConnexion(
@@ -158,7 +158,6 @@ class _ConnexionState extends State<Connexion> {
                           emailController.text.trim(),
                           passwordController.text,
                         );
-
                         if (success) {
                           if (context.mounted) {
                             Navigator.pushReplacement(
