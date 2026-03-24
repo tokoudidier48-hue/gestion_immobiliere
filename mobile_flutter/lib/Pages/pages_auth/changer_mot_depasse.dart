@@ -167,7 +167,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     try {
                       await ApiService().changePassword(
                         widget.email,
-                        passwordController.text,
+                        passwordController.text
                       );
 
                       ScaffoldMessenger.of(context).showSnackBar(

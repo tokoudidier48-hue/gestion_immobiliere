@@ -140,7 +140,8 @@ Future<Response> changePassword(String email, String newPassword) async {
         'nouveau_password': newPassword
       },
     );
-    return response;
+    print("Données envoyées : Email: $email, Nouveau Password: $newPassword");
+    return response ;
   } on DioException catch (e) {
     if (e.response != null) {
       print("Détails réponse : ${e.response?.data}");
@@ -153,6 +154,7 @@ Future<Response> changePassword(String email, String newPassword) async {
     throw Exception('Failed to change password: $e');
   }
 }
+
 /*
   // Methode pour connecter l'utilisateur avec google (à implémenter selon ton API)
 /Future<void> loginWithGoogle() async {
