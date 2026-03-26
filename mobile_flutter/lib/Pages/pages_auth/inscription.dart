@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:mobile_flutter/model/utilisateur.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/Pages/pages_auth/home.dart';
-import 'package:mobile_flutter/widgets/customField.dart';
+import 'package:mobile_flutter/widgets/widget_auth/customField.dart';
 class Inscription extends StatefulWidget {
   const Inscription({super.key});
 

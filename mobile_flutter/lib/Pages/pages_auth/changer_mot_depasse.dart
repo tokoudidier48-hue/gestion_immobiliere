@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:mobile_flutter/service/api.dart';
-import 'package:mobile_flutter/widgets/changer_mot_passe.dart';
+import 'package:mobile_flutter/widgets/widget_auth/changer_mot_passe.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;

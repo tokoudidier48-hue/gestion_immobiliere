@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/Pages/pages_auth/inscription.dart';
 import 'package:mobile_flutter/Pages/pages_auth/home.dart';
-import 'package:mobile_flutter/widgets/customField.dart';
+import 'package:mobile_flutter/widgets/widget_auth/customField.dart';
 
 class Connexion extends StatefulWidget {
   const Connexion({super.key});

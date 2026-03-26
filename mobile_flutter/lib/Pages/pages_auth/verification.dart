@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/changer_mot_depasse.dart';
 import 'package:mobile_flutter/Pages/pages_auth/mot_de_passe_oublier.dart';
-import 'package:mobile_flutter/widgets/otp.dart';
+import 'package:mobile_flutter/widgets/widget_auth/otp.dart';
 import 'package:mobile_flutter/service/api.dart';
 
 class VerificationPage extends StatefulWidget {

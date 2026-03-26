@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
-import 'package:mobile_flutter/widgets/onboarding.dart';
+import 'package:mobile_flutter/widgets/widget_auth/onboarding.dart';
 
 class OnboarningPages extends StatefulWidget {
   @override

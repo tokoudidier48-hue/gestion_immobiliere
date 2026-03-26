@@ -68,7 +68,7 @@ Vous avez demandé à réinitialiser votre mot de passe LoyaSmart.
 
 Votre code de vérification est : {otp_code}
 
-Ce code est valable 5 minutes.
+Ce code est valable 2 minutes.
 
 Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
 

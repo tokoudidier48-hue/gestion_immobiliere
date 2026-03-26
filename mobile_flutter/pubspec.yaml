@@ -41,6 +41,8 @@ dependencies:
   sms_autofill: ^2.3.0
   shared_preferences: ^2.5.4
   google_sign_in: ^7.2.0
+  video_player: ^2.10.1
+  chewie: ^1.13.0
 
 dev_dependencies:
   flutter_test:
