@@ -41,7 +41,7 @@ class _DecisionPageState extends State<DecisionPage> {
     } else if (auth.token != null && auth.token!.isNotEmpty) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => Home()),
+        MaterialPageRoute(builder: (_) => Home(role: auth.role!)),
       );
     } else {
       Navigator.pushReplacement(

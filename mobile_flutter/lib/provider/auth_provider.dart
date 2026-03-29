@@ -10,11 +10,13 @@ class UtilisateurProvider with ChangeNotifier {
   Utilisateur? _user;
   String? _token;
   String? _error;
+  String? _role;
 
   String? get token => _token;
   Utilisateur? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get role => _role;
 
   void clearError() {
     _error = null;
@@ -26,7 +28,10 @@ class UtilisateurProvider with ChangeNotifier {
     print("Token récupéré au lancement : $_token");
     notifyListeners();
   }
-
+  Future<void> setRole(String newRole) async{
+      _role =  newRole;
+  notifyListeners();
+}
   Future<bool> inscription(Utilisateur user) async {
     _isLoading = true;
     _error = null;
@@ -59,7 +64,9 @@ class UtilisateurProvider with ChangeNotifier {
         _token = response.data['token'] ?? response.data['access'];
         await LocalStorage.saveToken(_token!);
         _user = Utilisateur.fromJson(response.data['user'] ?? response.data);
+        _role =  response.data['user']?['role'] ?? "";
         _apiService.setToken(_token!);
+        notifyListeners();
         return true;
       }
       throw Exception('Connexion échouée');

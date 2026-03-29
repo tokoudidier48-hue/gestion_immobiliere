@@ -146,7 +146,6 @@ class _HomeNewState extends State<HomeNew> {
                       try {
                         final propriete = Propriete(
                           nomPropriete: nomMaisonController.text,
-                          dateCreation: DateTime.now(),
                         );
                         final api = ApiProprietaire();
                         final response = await api.creerPropriete(propriete);

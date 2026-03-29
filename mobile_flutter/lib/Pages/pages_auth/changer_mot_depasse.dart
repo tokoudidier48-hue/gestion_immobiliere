@@ -5,7 +5,7 @@ import 'package:mobile_flutter/widgets/widget_auth/changer_mot_passe.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
-
+ 
   const ResetPasswordPage({super.key, required this.email});
 
   @override

@@ -6,7 +6,7 @@ class ApiProprietaire {
   final Dio _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000', // URL de ton API
-      baseUrl: 'http://10.19.84.19/:8000', // URL de ton API
+      baseUrl: 'http://10.22.93.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {

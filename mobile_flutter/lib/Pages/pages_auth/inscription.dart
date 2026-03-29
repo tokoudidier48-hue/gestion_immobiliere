@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_auth/VerificationEmailPage.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_flutter/model/utilisateur.dart';
@@ -175,6 +176,7 @@ Widget build(BuildContext context) {
 
                 const SizedBox(height: 15),
                 customField(
+                  
                   controller: emailController,
                   hint: "votre@gmail.com",
                   icon: Icons.email,
@@ -199,7 +201,7 @@ Widget build(BuildContext context) {
                     if (value == null || value.isEmpty) {
                       return "Numéro requis";
                     }
-                    if (value.length == 10 ) {
+                    if (value.length < 10 || value.length > 10 ) {
                       return "Numéro béninois invalide";
                     }
                     return null;
@@ -256,7 +258,7 @@ Widget build(BuildContext context) {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (_) => const Home()),
+                                      builder: (_) =>  VerifyEmailPage(email: '')),
                                 );
                               } else if (auth.error != null &&
                                   context.mounted) {

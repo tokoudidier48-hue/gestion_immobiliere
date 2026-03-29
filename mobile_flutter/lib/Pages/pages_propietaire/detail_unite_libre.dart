@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_flutter/widgets/widgets_proprietaire/detail.dart';
+import 'package:mobile_flutter/widgets/widgets_proprietaire/detail_libre.dart';
 
 class DetailUniteScreen extends StatelessWidget {
   const DetailUniteScreen({super.key});

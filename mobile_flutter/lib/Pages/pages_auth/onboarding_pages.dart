@@ -10,6 +10,7 @@ class OnboarningPages extends StatefulWidget {
 
 class _OnboarningPagesState extends State<OnboarningPages> {
 
+
   final PageController _controller = PageController();
   int currentPage = 0;
 

@@ -5,7 +5,7 @@ import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/Pages/pages_auth/inscription.dart';
 import 'package:mobile_flutter/Pages/pages_auth/home.dart';
 import 'package:mobile_flutter/widgets/widget_auth/customField.dart';
-
+// tekebariba@gmail.com, Password : Sonon48@
 class Connexion extends StatefulWidget {
   const Connexion({super.key});
 
@@ -160,11 +160,27 @@ class _ConnexionState extends State<Connexion> {
                         );
                         if (success) {
                           if (context.mounted) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const Home()),
-                            );
+
+                            final role = auth.role?? ""; // récupérer le role depuis le provider
+
+                            if (role == "locataire") {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => Home(role: auth.role?? "")),
+                              );
+
+                            } else if (role == "proprietaire") {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => Home(role: auth.role?? "")),
+                              );
+
+                            } else {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) =>  Home(role: auth.role?? "")),
+                              );
+                            }
                           }
                         } else if (auth.error != null &&
                             context.mounted) {

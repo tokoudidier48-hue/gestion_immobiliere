@@ -15,7 +15,7 @@ class VerificationPage extends StatefulWidget {
 }
 
 class _VerificationPageState extends State<VerificationPage> {
-
+ 
   int secondsRemaining = 120;
   bool canResend = false;
   Timer? timer;

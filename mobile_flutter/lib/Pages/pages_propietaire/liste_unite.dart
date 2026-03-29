@@ -109,30 +109,27 @@ class _ChambresMaisonScreenState extends State<ChambresMaisonScreen> {
   // ── Barre de navigation ─────────────────────────────────────────────────────
 
   Widget _buildBottomNav() {
-    final items = [
-      _NavItem(icon: Icons.home_outlined, label: 'Accueil', index: 0),
-      _NavItem(icon: Icons.apartment_outlined, label: 'Mes Biens', index: 1),
-      _NavItem(icon: Icons.people_outline, label: 'Locataires', index: 2),
-      _NavItem(icon: Icons.chat_bubble_outline, label: 'Messages', index: 3),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: kNavBorder, width: 1)),
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: items
-                .map((item) => _buildNavItem(item))
-                .toList(),
+    // 🔹 BOTTOM NAVBAR
+    return  NavigationBar(
+        destinations: [
+          NavigationDestination(
+            icon: Icon(Icons.home), 
+            label: "Accueil",
           ),
-        ),
-      ),
-    );
+          NavigationDestination(
+            icon: Icon(Icons.apartment), 
+            label: "Mes Biens",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people), 
+            label: "Locataires",
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.message), 
+            label: "Messages",
+          )
+        ]
+      );
   }
 
   Widget _buildNavItem(_NavItem item) {
