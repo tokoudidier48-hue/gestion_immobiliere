@@ -1,0 +1,14 @@
+# Ignore Python cache
+*.pyc
+__pycache__/
+
+# Environment files
+*.env
+.env
+
+# Database
+db.sqlite3
+
+# Media and static
+/media
+/staticfiles

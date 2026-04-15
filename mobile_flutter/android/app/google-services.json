@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "351694266943",
+    "project_id": "app-gestion-immo-benin",
+    "storage_bucket": "app-gestion-immo-benin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:351694266943:android:d28c4ba017d4581b238e8a",
+        "android_client_info": {
+          "package_name": "com.example.mobile_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJlRrrmSmhFTQFPoka2HSDR9zkx3iTneo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,312 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:mobile_flutter/model/proprietaire/proprietes.dart';
+import 'package:mobile_flutter/model/proprietaire/unites.dart';
+import 'package:mobile_flutter/service/local_storage.dart';
+
+class ApiProprietaire {
+  final Dio _dio;
+
+  ApiProprietaire() : _dio = Dio(
+    BaseOptions(
+      //baseUrl: 'http://192.168.100.22:8000',
+      baseUrl: 'http://10.190.5.129:8000', // URL de ton API
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    ),
+  ) {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (
+          RequestOptions options,
+          RequestInterceptorHandler handler,
+        ) async {
+          print("==> Intercepteur déclenché !");
+          final token = await LocalStorage.getToken();
+          print("==> Token récupéré : $token");
+
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+
+          return handler.next(options);
+        },
+      ),
+    );
+  }
+  
+
+//--------------------------- PROPRIETAIRE ------------------------------------//
+
+
+// Méthode pour créer une propriété
+Future<Response> creerPropriete(Propriete propriete) async {
+  try {
+    print("==> Début de la création de propriété");
+    print("Données envoyées : ${propriete.toJson()}");
+    final response = await _dio.post(
+      '/api/proprietes/proprietes/',
+      data: propriete.toJson(),
+    );
+    return response;
+  } on DioException catch (e) {
+    print("Erreur DioException : ${e.message}");
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data['detail']);
+    }
+    throw Exception('Failed to create property: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to create property: $e');
+  }
+}
+
+// Méthode pour récupérer les propriétés d'un propriétaire
+Future<List<Propriete>> getProprietes() async {
+  try {
+    print("==> Début de la récupération des propriétés");
+    final response = await _dio.get('/api/proprietes/proprietes/');
+    print("==> Réponse getProprietes : ${response.data}");
+    return (response.data as List).map<Propriete>((json) => Propriete.fromJson(json)).toList(); // ✅
+  } on DioException catch (e) {
+    print(e.response?.data['detail']);
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data['message'] ?? 'Erreur récupération propriétés');
+    }
+    throw Exception('Failed to fetch properties: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to fetch properties: $e');
+  }
+}
+
+// Méthode pour supprimer une propriété
+Future<Response> supprimerPropriete(int proprieteId) async {
+  try {
+    print("==> Début de la suppression de propriété");
+    final response = await _dio.delete('/api/proprietes/proprietes/$proprieteId/'); // ← nouvelle URL
+    return response;
+  } on DioException catch (e) {
+    print("Erreur DioException : ${e.message}");
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data['message'] ?? 'Erreur suppression propriété');
+    }
+    throw Exception('Failed to delete property: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to delete property: $e');
+  }
+}
+
+// Méthode pour modifier une propriété
+Future<Response> modifierPropriete(Propriete propriete) async {
+  try {
+    final response = await _dio.put(
+      '/api/proprietes/proprietes/${propriete.id}/', // ← URL corrigée
+      data: propriete.toJson(),
+    );
+    return response;
+  } on DioException catch (e) {
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data);
+    }
+    throw Exception('Failed to update property: $e');
+  } catch (e) {
+    throw Exception('Failed to update property: $e');
+  }
+}
+
+//--------------------------- UNITE ------------------------------------//
+
+// Méthode pour ajouter une unité à une propriété
+    Future<Response> ajouterUnite(int proprieteId, Unites unite, List<File> images) async {
+      try {
+        print("==> Début de l'ajout d'une unité");
+
+        // Tout dans un seul FormData
+        final Map<String, dynamic> data = {
+          ...unite.toJson(),
+          'propriete': proprieteId,
+        };
+
+        final formData = FormData.fromMap(data);
+
+        // Ajoute les images si présentes
+        if (images.isNotEmpty) {
+          for (int i = 0; i < images.length; i++) {
+            formData.files.add(MapEntry(
+              'photos',
+              await MultipartFile.fromFile(
+                images[i].path,
+                filename: images[i].path.split('/').last,
+              ),
+            ));
+          }
+        }
+
+        final response = await _dio.post(
+          '/api/unites/unites/create-with-photos/',
+          data: formData,
+        );
+
+        print("==> Réponse ajout unité : ${response.data}");
+        return response;
+      } on DioException catch (e) {
+        if (e.response != null) {
+          print("Détails réponse : ${e.response?.data}");
+          throw Exception(e.response?.data);
+        }
+        throw Exception('Failed to add unit: $e');
+      } catch (e) {
+        print("Erreur inconnue : $e");
+        throw Exception('Failed to add unit: $e');
+      }
+    }
+
+// Méthode pour récupérer les unités d'une propriété
+  Future<List<Unites>> getUnitesProprio() async {
+    try {
+      print("==> Récupération de toutes les unités du propriétaire");
+      final response = await _dio.get('/api/unites/unites/');
+      print("==> Réponse : ${response.data}");
+      return (response.data as List).map<Unites>((json) => Unites.fromJson(json)).toList();
+    } on DioException catch (e) {
+      if (e.response != null) {
+        print("Détails réponse : ${e.response?.data}");
+        throw Exception(e.response?.data);
+      }
+      throw Exception('Failed to fetch units: $e');
+    } catch (e) {
+      print("Erreur inconnue : $e");
+      throw Exception('Failed to fetch units: $e');
+    }
+  }
+
+// Méthode pour supprimer une unité
+Future<Response> supprimerUnite(int uniteId) async {
+  try {
+    print("==> Début de la suppression d'une unité");
+    final response = await _dio.delete('/api/unites/unites/$uniteId/');
+    return response;
+  } on DioException catch (e) {
+    print("Erreur DioException : ${e.message}");
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data['message'] ?? 'Erreur suppression unité');
+    }
+    throw Exception('Failed to delete unit: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to delete unit: $e');
+  }
+}
+
+// Méthode pour modifier une unité
+Future<Response> modifierUnite(Unites unite, List<File> images) async {
+  try {
+    print("==> Début de la modification d'une unité");
+
+    final Map<String, dynamic> data = {
+      ...unite.toJson(),
+      'propriete': unite.proprieteId,
+    };
+
+    final formData = FormData.fromMap(data);
+
+    // Ajoute les nouvelles images si présentes
+    if (images.isNotEmpty) {
+      for (int i = 0; i < images.length; i++) {
+        formData.files.add(MapEntry(
+          'photos',
+          await MultipartFile.fromFile(
+            images[i].path,
+            filename: images[i].path.split('/').last,
+          ),
+        ));
+      }
+    }
+
+    final response = await _dio.put(
+      '/api/unites/unites/${unite.id}/',
+      data: formData,
+    );
+
+    print("==> Réponse modification unité : ${response.data}");
+    return response;
+  } on DioException catch (e) {
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data);
+    }
+    throw Exception('Failed to update unit: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to update unit: $e');
+  }
+}
+
+// Méthode pour récupérer les détails d'une unité
+Future<Unites> getDetailsUnite(int uniteId) async {
+  try {
+    print("==> Début de la récupération des détails d'une unité");
+    final response = await _dio.get('/api/proprietaire/details_unite/$uniteId/');
+    return Unites.fromJson(response.data);
+  } on DioException catch (e) {
+    print("Erreur DioException : ${e.message}");
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data['message'] ?? 'Erreur récupération détails unité');  
+    }
+    throw Exception('Failed to fetch unit details: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to fetch unit details: $e');
+  }
+}
+
+Future<List<Unites>> getUnitesByPropriete(int proprieteId) async {
+  try {
+    print("==> Récupération des unités de la propriété $proprieteId");
+    final response = await _dio.get('/api/unites/unites/?propriete=$proprieteId');
+    print("==> Réponse : ${response.data}");
+    return (response.data as List).map<Unites>((json) => Unites.fromJson(json)).toList();
+  } on DioException catch (e) {
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data);
+    }
+    throw Exception('Failed to fetch units: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to fetch units: $e');
+  }
+}
+
+//--------------------------- LOCATAIRE ------------------------------------//
+
+Future<List<Unites>> getLocatairesByUnite(int uniteId) async {
+  try {
+    print("==> Récupération des locataires de l'unité $uniteId");
+    final response = await _dio.get('/api/unites/locataires/?unite=$uniteId');
+    print("==> Réponse : ${response.data}");
+    return (response.data as List).map<Unites>((json) => Unites.fromJson(json)).toList();
+  } on DioException catch (e) {
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      throw Exception(e.response?.data);
+    }
+    throw Exception('Failed to fetch tenants: $e');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    throw Exception('Failed to fetch tenants: $e');
+  }
+}
+
+}
