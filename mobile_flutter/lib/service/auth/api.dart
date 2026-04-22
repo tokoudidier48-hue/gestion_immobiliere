@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 //import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mobile_flutter/model/utilisateur.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/service/notification_service.dart';
 
 class ApiService {
   final Dio _dio;
@@ -11,7 +12,8 @@ class ApiService {
   ApiService() : _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
-      baseUrl: 'http://10.190.5.129:8000', // URL de ton API
+      //baseUrl: 'http://10.190.5.129:8000', // URL de ton API
+      baseUrl: 'http://10.55.17.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
@@ -90,6 +92,9 @@ class ApiService {
       await LocalStorage.saveUserId(userId);
       await LocalStorage.saveToken(token); 
       await LocalStorage.saveRole(role); // ← ajoute ça
+      Future.delayed(const Duration(seconds: 1), () async {
+        await NotificationService.renvoyerTokenApresLogin();
+      });
       print("Token : $token");
       print("Role : $role");
       print("Role : ${response.data}");
@@ -241,15 +246,19 @@ Future<Utilisateur> modifierProfil({
 
 Future<void> envoyerTokenFCM(String token) async {
   try {
-    await _dio.post(
+    final response = await _dio.post(
       '/api/comptes/fcm-token/',
       data: {'token': token},
     );
+
     print("==> Token FCM envoyé au backend");
+    print("==> Réponse serveur : ${response.data}");
   } on DioException catch (e) {
     print("==> Erreur envoi token FCM : ${e.response?.data}");
+    rethrow;
   } catch (e) {
     print("==> Erreur : $e");
+    rethrow;
   }
 }
   

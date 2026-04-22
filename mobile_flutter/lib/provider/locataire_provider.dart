@@ -26,6 +26,21 @@ class DemandeProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<dynamic>> fetchDemandesByUnite(int uniteId) async {
+  try {
+    // Utilise les demandes déjà chargées ou refetch
+    if (_demandes.isEmpty) {
+      _demandes = await _api.getMesDemandes();
+    }
+    return _demandes.where((d) {
+      return d['unite'] == uniteId ||
+          d['unite_details']?['id'] == uniteId;
+    }).toList();
+  } catch (e) {
+    return [];
+  }
+}
+
   Future<bool> envoyerDemande(int uniteId, {String? message}) async {
     _isLoading = true;
     _error = null;
@@ -83,7 +98,7 @@ class PaiementProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> effectuerPaiement(Map<String, dynamic> data) async {
+  /*Future<bool> effectuerPaiement(Map<String, dynamic> data) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -97,7 +112,62 @@ class PaiementProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }*/
+
+ Future<bool> effectuerPaiement({
+  required int uniteId,
+  required double montant,
+  required String modePaiement,
+  required String numeroPaiement,
+  String typePaiement = 'loyer',
+}) async {
+  _isLoading = true;
+  _error = null;
+  notifyListeners();
+  try {
+    await _api.effectuerPaiement(
+      uniteId: uniteId,
+      montant: montant,
+      modePaiement: modePaiement,
+      numeroPaiement: numeroPaiement,
+      typePaiement: typePaiement,
+    );
+    await fetchPaiements();
+    return true;
+  } catch (e) {
+    _error = e.toString();
+    return false;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
+
+Future<bool> demanderPaiementEspece({
+  required int uniteId,
+  required double montant,
+  String typePaiement = 'loyer',
+}) async {
+  _isLoading = true;
+  _error = null;
+  notifyListeners();
+  try {
+    await _api.demanderPaiementEspece(
+      uniteId: uniteId,
+      montant: montant,
+      typePaiement: typePaiement,
+    );
+    return true;
+  } catch (e) {
+    _error = e.toString();
+    return false;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
+  }
+}
+
+  
 }
 
 class MessageProvider extends ChangeNotifier {

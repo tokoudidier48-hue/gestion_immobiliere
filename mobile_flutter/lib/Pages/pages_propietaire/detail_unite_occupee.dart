@@ -1,11 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/model/proprietaire/unites.dart';
+import 'package:mobile_flutter/service/proprietaire/apiProprietaire.dart';
 import 'package:mobile_flutter/widgets/widgets_proprietaire/detail_occupe.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class DetailUniteScreenn extends StatelessWidget {
+class DetailUniteScreenn extends StatefulWidget {
   final Unites unite;
   const DetailUniteScreenn({super.key, required this.unite});
+    @override
+State<DetailUniteScreenn> createState() => _DetailUniteScreennState();
+  }
+
+class _DetailUniteScreennState extends State<DetailUniteScreenn> {
+  final ApiProprietaire _api = ApiProprietaire();
+
+  dynamic _locataire;
+  bool _loadingLocataire = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLocataire();
+  }
+
+  Future<void> _fetchLocataire() async {
+    try {
+      if (widget.unite.id != null) {
+        final data = await _api.getLocatairesByUnite(widget.unite.id!);
+
+        if (data.isNotEmpty) {
+          _locataire = data.first;
+        }
+      }
+    } catch (e) {
+      print("Erreur locataire: $e");
+    } finally {
+      setState(() => _loadingLocataire = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,9 +100,9 @@ class DetailUniteScreenn extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            unite.photos.isNotEmpty
+            widget.unite.photos.isNotEmpty
                 ? Image.network(
-                    unite.photos[0],
+                    widget.unite.photos[0],
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       color: const Color(0xFFFFEDD5),
@@ -105,7 +137,7 @@ class DetailUniteScreenn extends StatelessWidget {
               child: Row(
                 children: [
                   TopBadge(
-                    label: unite.typeUnite.toUpperCase().replaceAll('_', ' '),
+                    label: widget.unite.typeUnite.toUpperCase().replaceAll('_', ' '),
                     color: kBadgeChambre,
                   ),
                   const SizedBox(width: 8),
@@ -129,7 +161,7 @@ class DetailUniteScreenn extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  unite.nomUnite,
+                  widget.unite.nomUnite,
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: kTextDark),
                 ),
               ),
@@ -137,7 +169,7 @@ class DetailUniteScreenn extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${unite.loyer.toInt()} FCFA',
+                    '${widget.unite.loyer.toInt()} FCFA',
                     style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: kPrimary),
                   ),
                   const Text('Loyer Mensuel', style: TextStyle(fontSize: 11, color: kTextMid)),
@@ -152,7 +184,7 @@ class DetailUniteScreenn extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  '${unite.ville}, ${unite.adresse}',
+                  '${widget.unite.ville}, ${widget.unite.adresse}',
                   style: const TextStyle(fontSize: 12, color: kTextMid),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -184,7 +216,7 @@ class DetailUniteScreenn extends StatelessWidget {
               icon: Icons.payment_outlined,
               iconColor: kPrimary,
               label: 'Prépayé',
-              value: unite.prepaye ? 'Avec prépayé' : 'Sans prépayé',
+              value: widget.unite.prepaye ? 'Avec prépayé' : 'Sans prépayé',
               valueColor: kTextDark,
             ),
           ),
@@ -201,7 +233,7 @@ class DetailUniteScreenn extends StatelessWidget {
           const SectionTitle(title: 'DESCRIPTION'),
           const SizedBox(height: 10),
           Text(
-            unite.description.isNotEmpty ? unite.description : 'Aucune description disponible.',
+            widget.unite.description.isNotEmpty ? widget.unite.description : 'Aucune description disponible.',
             style: const TextStyle(fontSize: 13, color: kTextMid, height: 1.6),
           ),
         ],
@@ -216,11 +248,11 @@ class DetailUniteScreenn extends StatelessWidget {
         children: [
           const SectionTitle(title: 'CARACTÉRISTIQUES'),
           const SizedBox(height: 12),
-          InfoRow(label: 'Type', value: unite.typeUnite.replaceAll('_', ' ')),
+          InfoRow(label: 'Type', value: widget.unite.typeUnite.replaceAll('_', ' ')),
           const Divider(height: 16, color: kDivider),
-          InfoRow(label: 'Douche', value: unite.typeDouche),
+          InfoRow(label: 'Douche', value: widget.unite.typeDouche),
           const Divider(height: 16, color: kDivider),
-          InfoRow(label: 'Garage', value: unite.garage ? 'Oui' : 'Non'),
+          InfoRow(label: 'Garage', value: widget.unite.garage ? 'Oui' : 'Non'),
         ],
       ),
     );
@@ -233,16 +265,16 @@ class DetailUniteScreenn extends StatelessWidget {
         children: [
           const SectionTitle(title: 'CONDITIONS DE LOCATION'),
           const SizedBox(height: 12),
-          InfoRow(label: "Nombre d'avances", value: '${unite.nbrAvances} mois'),
+          InfoRow(label: "Nombre d'avances", value: '${widget.unite.nbrAvances} mois'),
           const Divider(height: 20, color: kDivider),
-          InfoRow(label: 'Type de caution', value: unite.typeCaution.replaceAll('_', ' ')),
+          InfoRow(label: 'Type de caution', value: widget.unite.typeCaution.replaceAll('_', ' ')),
           const Divider(height: 20, color: kDivider),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Montant caution', style: TextStyle(fontSize: 13, color: kTextMid)),
               Text(
-                '${unite.montantCaution.toInt()} FCFA',
+                '${widget.unite.montantCaution.toInt()} FCFA',
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kTextDark),
               ),
             ],
@@ -253,7 +285,7 @@ class DetailUniteScreenn extends StatelessWidget {
   }
 
   Widget _buildTotalEntree() {
-    final total = (unite.loyer * unite.nbrAvances) + unite.montantCaution;
+    final total = (widget.unite.loyer * widget.unite.nbrAvances) + widget.unite.montantCaution;
     return SectionCard(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -287,8 +319,8 @@ class DetailUniteScreenn extends StatelessWidget {
   }
 
   Widget _buildContactProprietaire() {
-    final initiales = unite.contactProprietaire.isNotEmpty
-        ? unite.contactProprietaire.substring(0, 2)
+    final initiales = widget.unite.contactProprietaire.isNotEmpty
+        ? widget.unite.contactProprietaire.substring(0, 2)
         : 'PR';
 
     return SectionCard(
@@ -318,7 +350,7 @@ class DetailUniteScreenn extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      unite.contactProprietaire,
+                      widget.unite.contactProprietaire,
                       style: const TextStyle(fontSize: 13, color: kTextMid),
                     ),
                   ],
@@ -326,7 +358,7 @@ class DetailUniteScreenn extends StatelessWidget {
               ),
               GestureDetector(
                   onTap: () {
-                    appeler(unite.contactProprietaire);
+                    appeler(widget.unite.contactProprietaire);
                   },
                   child: Container(
                     width: 42,

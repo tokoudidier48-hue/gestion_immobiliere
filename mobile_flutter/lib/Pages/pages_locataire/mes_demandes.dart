@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/details_logement_demande.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,6 @@ class MesDemandesPage extends StatefulWidget {
 }
 
 class _MesDemandesPageState extends State<MesDemandesPage> {
-  static const _primaryColor = Color(0xFF1A3C6E);
 
   @override
   void initState() {
@@ -150,116 +150,125 @@ class _MesDemandesPageState extends State<MesDemandesPage> {
         statusLabel = 'En attente';
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailsLogementDepuisDemandePage(demande: demande),
+        ),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Icône à la place de l'image (pas de photo dans la réponse)
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A3C6E).withOpacity(0.08),
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
-                ),
-                child: Icon(typeIcon, color: const Color(0xFF1A3C6E), size: 36),
-              ),
-              // Contenu
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(titre,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                overflow: TextOverflow.ellipsis),
-                          ),
-                          const SizedBox(width: 6),
-                          _buildStatusBadge(statusLabel, statusColor),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(type,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF1A3C6E),
-                              fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          const Icon(Icons.person_outline, size: 12, color: Colors.grey),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(proprietaire,
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                overflow: TextOverflow.ellipsis),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Text('$loyer FCFA / mois',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A3C6E))),
-                      const SizedBox(height: 3),
-                      Text(_formatDate(date),
-                          style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                    ],
-                  ),
-                ),
-              ),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
             ],
           ),
-          // Bouton annuler si en attente
-          if (statut == 'en_attente')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Annuler la demande'),
-                        content: const Text('Voulez-vous annuler cette demande ?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Non'),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // Icône à la place de l'image (pas de photo dans la réponse)
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A3C6E).withOpacity(0.08),
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+                    ),
+                    child: Icon(typeIcon, color: const Color(0xFF1A3C6E), size: 36),
+                  ),
+                  // Contenu
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(titre,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                              const SizedBox(width: 6),
+                              _buildStatusBadge(statusLabel, statusColor),
+                            ],
                           ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                            child: const Text('Annuler', style: TextStyle(color: Colors.white)),
+                          const SizedBox(height: 4),
+                          Text(type,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF1A3C6E),
+                                  fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              const Icon(Icons.person_outline, size: 12, color: Colors.grey),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(proprietaire,
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 3),
+                          Text('$loyer FCFA / mois',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1A3C6E))),
+                          const SizedBox(height: 3),
+                          Text(_formatDate(date),
+                              style: const TextStyle(fontSize: 11, color: Colors.grey)),
                         ],
                       ),
-                    );
-                    if (confirm == true && context.mounted) {
-                      await provider.annulerDemande(demandeId);
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
-                  child: const Text('Annuler la demande',
-                      style: TextStyle(color: Colors.red, fontSize: 13)),
-                ),
+                ],
               ),
-            ),
-        ],
-      ),
+              // Bouton annuler si en attente
+              if (statut == 'en_attente')
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Annuler la demande'),
+                            content: const Text('Voulez-vous annuler cette demande ?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Non'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                child: const Text('Annuler', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true && context.mounted) {
+                          await provider.annulerDemande(demandeId);
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Annuler la demande',
+                          style: TextStyle(color: Colors.red, fontSize: 13)),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        )
     );
   }
 

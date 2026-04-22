@@ -43,7 +43,6 @@ class _MesMaisonsPageState extends State<MesMaisonsPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        leading: const BackButton(color: Colors.black),
         title: const Text(
           'Mes Maisons',
           style: TextStyle(color: Colors.black, fontSize: 17, fontWeight: FontWeight.bold),
@@ -243,14 +242,17 @@ class _MesMaisonsPageState extends State<MesMaisonsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LocatairesPage(),
-                      ),
-                    );
-                  },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LocatairesPage(
+                            proprieteId: maison.id,
+                            nomPropriete: maison.nomPropriete,
+                          ),
+                        ),
+                      );
+                    },
                   child: Text(
                     'Locataires',
                     style: TextStyle(

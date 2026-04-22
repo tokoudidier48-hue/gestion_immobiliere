@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/chatPageDirect.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/trouver_colocataire.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
@@ -968,127 +969,185 @@ Widget _infoChip(IconData icon, String label, String value) {
   }
 
   Widget _buildBottomButton(BuildContext context, dynamic uniteId) {
-    final isAnnonce = _selectedTab == 1;
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-      child: (isAnnonce) ?
-              FutureBuilder<List<dynamic>>(
-                future: context.read<ColocataireProvider>().getRecherchesByUnite(uniteId),
-                builder: (context, snapshot) {
-                  final recherches = snapshot.data ?? [];
-                  final aDejaUneAnnonce = recherches.isNotEmpty;
+  final isAnnonce = _selectedTab == 1;
 
-                  // Si une annonce existe déjà → pas de bouton
-                  if (aDejaUneAnnonce) return const SizedBox.shrink();
-
-                  // Sinon → bouton visible
-                  return SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TrouverColocatairePage(
-                              uniteId: uniteId,
-                              estPostulant: false,
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A3C6E),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('+ AJOUTER VOTRE INFORMATION',
-                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-                    ),
-                  );
-                },
-              )
-          : Consumer<DemandeProvider>(
-              builder: (context, demandeProvider, child) {
-                return SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: demandeProvider.isLoading ? null : () async {
-                      final messageController = TextEditingController();
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          title: const Text('Envoyer une demande',
-                              style: TextStyle(fontWeight: FontWeight.w700)),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('Voulez-vous envoyer une demande pour ce logement ?'),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: messageController,
-                                maxLines: 3,
-                                decoration: InputDecoration(
-                                  hintText: 'Message optionnel...',
-                                  filled: true,
-                                  fillColor: Colors.grey[100],
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Annuler'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1A3C6E)),
-                              child: const Text('Envoyer',
-                                  style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirm == true && context.mounted) {
-                        final success = await demandeProvider.envoyerDemande(
-                          uniteId,
-                          message: messageController.text.trim().isEmpty
-                              ? null
-                              : messageController.text.trim(),
-                        );
-
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(success
-                                ? 'Demande envoyée avec succès !'
-                                : 'Erreur : ${demandeProvider.error}'),
-                            backgroundColor: success ? Colors.green : Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A3C6E),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: demandeProvider.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Envoyez une demande de chambre',
-                            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-                  ),
-                );
+  if (isAnnonce) {
+    return FutureBuilder<List<dynamic>>(
+      future: context.read<ColocataireProvider>().getRecherchesByUnite(uniteId),
+      builder: (context, snapshot) {
+        final recherches = snapshot.data ?? [];
+        if (recherches.isNotEmpty) return const SizedBox.shrink();
+        return Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => TrouverColocatairePage(uniteId: uniteId, estPostulant: false),
+                ));
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A3C6E),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('+ AJOUTER VOTRE INFORMATION',
+                  style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
             ),
+          ),
+        );
+      },
     );
   }
+
+  // ← Onglet Détails — bouton dynamique selon statut demande
+  return FutureBuilder<List<dynamic>>(
+    future: context.read<DemandeProvider>().fetchDemandesByUnite(uniteId),
+    builder: (context, snapshot) {
+      final demandes = snapshot.data ?? [];
+
+      // Cherche une demande active pour cette unité
+      dynamic demande;
+      try {
+        demande = demandes.firstWhere(
+          (d) => d['unite'] == uniteId || d['unite_details']?['id'] == uniteId,
+        );
+      } catch (_) {
+        demande = null;
+      }
+
+      final statut = demande?['statut'] ?? '';
+
+      return Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+        child: Consumer<DemandeProvider>(
+          builder: (context, demandeProvider, child) {
+            // ── Demande acceptée → Effectuer le paiement ──
+            if (statut == 'acceptee') {
+              return SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const PaiementPage(),
+                    ));
+                  },
+                  icon: const Icon(Icons.payment, color: Colors.white),
+                  label: const Text('Effectuer le paiement',
+                      style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              );
+            }
+
+            // ── Demande en attente → désactivé ──
+            if (statut == 'en_attente') {
+              return SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Demande en cours...',
+                      style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                ),
+              );
+            }
+
+            // ── Pas de demande ou refusée → peut envoyer ──
+            return SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: demandeProvider.isLoading ? null : () async {
+                  final messageController = TextEditingController();
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: const Text('Envoyer une demande',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Voulez-vous envoyer une demande pour ce logement ?'),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: messageController,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              hintText: 'Message optionnel...',
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Annuler'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3C6E)),
+                          child: const Text('Envoyer', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && context.mounted) {
+                    final success = await demandeProvider.envoyerDemande(
+                      uniteId,
+                      message: messageController.text.trim().isEmpty
+                          ? null
+                          : messageController.text.trim(),
+                    );
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(success
+                            ? 'Demande envoyée avec succès !'
+                            : 'Erreur : ${demandeProvider.error}'),
+                        backgroundColor: success ? Colors.green : Colors.red,
+                      ),
+                    );
+                    if (success) setState(() {}); // ← rafraîchit le bouton
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A3C6E),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: demandeProvider.isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        statut == 'refusee'
+                            ? 'Renvoyer une demande'
+                            : 'Envoyez une demande de chambre',
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
+}
 }

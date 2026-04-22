@@ -12,7 +12,7 @@ class DetailDemandeNotifPage extends StatefulWidget {
 
 class _DetailDemandeNotifPageState extends State<DetailDemandeNotifPage> {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.190.5.129:8000',
+    baseUrl: 'http://10.55.17.129:8000',
     headers: {'Content-Type': 'application/json'},
   ));
 
@@ -66,48 +66,69 @@ class _DetailDemandeNotifPageState extends State<DetailDemandeNotifPage> {
   }
 
   Future<void> _accepter() async {
-    setState(() => _isActing = true);
-    try {
-      await _dio.post('/api/locations/demandes/${widget.demandeId}/accepter/');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Demande acceptée avec succès !'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      setState(() => _demande!['statut'] = 'acceptee');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) setState(() => _isActing = false);
-    }
+  final statut = _demande?['statut'] ?? '';
+  if (statut == 'acceptee') {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Cette demande a déjà été acceptée.'), backgroundColor: Colors.orange),
+    );
+    return;
   }
 
-  Future<void> _refuser() async {
-    setState(() => _isActing = true);
-    try {
-      await _dio.post('/api/locations/demandes/${widget.demandeId}/refuser/');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Demande refusée.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      setState(() => _demande!['statut'] = 'refusee');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) setState(() => _isActing = false);
-    }
+  setState(() => _isActing = true);
+  try {
+    await _dio.post('/api/locations/demandes/${widget.demandeId}/accepter/');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Demande acceptée avec succès !'), backgroundColor: Colors.green),
+    );
+    setState(() => _demande!['statut'] = 'acceptee');
+  } on DioException catch (e) {
+    if (!mounted) return;
+    final msg = e.response?.statusCode == 500
+        ? 'Cette demande a déjà été traitée.'
+        : 'Erreur : ${e.response?.data ?? e.message}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  } finally {
+    if (mounted) setState(() => _isActing = false);
   }
+}
+
+  Future<void> _refuser() async {
+  // Vérifie le statut actuel avant d'agir
+  final statut = _demande?['statut'] ?? '';
+  if (statut == 'refusee') {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Cette demande a déjà été refusée.'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
+
+  setState(() => _isActing = true);
+  try {
+    await _dio.post('/api/locations/demandes/${widget.demandeId}/refuser/');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Demande refusée.'), backgroundColor: Colors.orange),
+    );
+    setState(() => _demande!['statut'] = 'refusee');
+  } on DioException catch (e) {
+    if (!mounted) return;
+    // Erreur 500 = déjà refusée côté backend
+    final msg = e.response?.statusCode == 500
+        ? 'Cette demande a déjà été traitée.'
+        : 'Erreur : ${e.response?.data ?? e.message}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  } finally {
+    if (mounted) setState(() => _isActing = false);
+  }
+}
 
   @override
   Widget build(BuildContext context) {

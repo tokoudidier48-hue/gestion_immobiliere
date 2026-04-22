@@ -10,7 +10,8 @@ class ApiProprietaire {
   ApiProprietaire() : _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
-      baseUrl: 'http://10.190.5.129:8000', // URL de ton API
+      //baseUrl: 'http://10.190.5.129:8000', // URL de ton API
+      baseUrl: 'http://10.55.17.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
@@ -306,6 +307,118 @@ Future<List<Unites>> getLocatairesByUnite(int uniteId) async {
   } catch (e) {
     print("Erreur inconnue : $e");
     throw Exception('Failed to fetch tenants: $e');
+  }
+}
+
+Future<List<dynamic>> getLocataires({int? proprieteId}) async {
+  try {
+    final queryParams = proprieteId != null ? {'propriete': proprieteId} : null;
+    final response = await _dio.get(
+      '/api/locataires/locataires/',
+      queryParameters: queryParams,
+    );
+    print("==> Locataires : ${response.data}");
+    return response.data as List;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<List<dynamic>> getPaiementsEspece({int? proprieteId}) async {
+  try {
+    final params = <String, dynamic>{
+      'mode_paiement': 'especes',
+      'statut': 'en_attente',
+      if (proprieteId != null) 'propriete': proprieteId,
+    };
+    final response = await _dio.get(
+      '/api/paiements/paiements/',
+      queryParameters: params,
+    );
+    print("==> Paiements espèce en attente : ${response.data}");
+    return response.data as List;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+/*Future<List<dynamic>> getPaiementsEnAttente({int? proprieteId}) async {
+  try {
+    final response = await _dio.get(
+      '/api/paiements/en_attente/',
+      queryParameters: proprieteId != null
+          ? {'propriete': proprieteId}
+          : null,
+    );
+
+    print("==> Paiements en attente : ${response.data}");
+    return response.data as List;
+  } on DioException catch (e) {
+    print("Erreur paiements: ${e.response?.data}");
+    throw Exception('Failed to fetch paiements');
+  }
+}*/
+
+Future<void> ajouterLocataireManuel({
+  required String email,
+  required int uniteId,
+}) async {
+  try {
+    final response = await _dio.post(
+      '/api/locataires/locataires/',
+      data: {
+        'email': email,
+        'unite': uniteId,
+      },
+    );
+    print("==> Locataire ajouté manuellement : ${response.data}");
+  } on DioException catch (e) {
+    if (e.response != null) {
+      print("==> Erreur ajout locataire : ${e.response?.data}");
+      throw Exception(e.response?.data);
+    }
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+/*
+Future<void> validerPaiementEspece(int paiementId, bool accepter) async {
+  try {
+    final endpoint = accepter ? 'accepter' : 'refuser'; // ✅ CORRECTION ICI
+    await _dio.post('/api/paiements/paiements/$paiementId/$endpoint/');
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}*/
+
+Future<void> accepterPaiement(int id) async {
+  await _dio.post('/api/paiements/paiements/$id/accepter/');
+  print("==> Paiement accepté : $id");
+}
+
+Future<void> refuserPaiement(int id) async {
+  await _dio.post('/api/paiements/paiements/$id/refuser/');
+  print("==> Paiement refusé : $id");
+}
+
+Future<void> supprimerLocataire(int locataireId) async {
+  try {
+    await _dio.delete('/api/locataires/locataires/$locataireId/');
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
   }
 }
 

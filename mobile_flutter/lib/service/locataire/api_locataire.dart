@@ -6,7 +6,8 @@ class ApiLocataire {
 
   ApiLocataire() : _dio = Dio(
     BaseOptions(
-      baseUrl: 'http://10.190.5.129:8000',
+      //baseUrl: 'http://10.190.5.129:8000',
+      baseUrl: 'http://10.55.17.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {'Content-Type': 'application/json'},
@@ -105,22 +106,66 @@ class ApiLocataire {
 
   // ── PAIEMENTS ─────────────────────────────────────────────────────────────
 
-  Future<Response> effectuerPaiement(Map<String, dynamic> data) async {
-    try {
-      print("==> Effectuer paiement : $data");
-      final response = await _dio.post('/api/paiements/paiements/', data: data);
-      print("==> Réponse : ${response.data}");
-      return response;
-    } on DioException catch (e) {
-      if (e.response != null) {
-        print("Détails réponse : ${e.response?.data}");
-        throw Exception(e.response?.data);
-      }
-      throw Exception('Failed to pay: $e');
-    } catch (e) {
-      throw Exception('Failed to pay: $e');
-    }
+  Future<Response> effectuerPaiement({
+  required int uniteId,
+  required double montant,
+  required String modePaiement,
+  required String numeroPaiement,
+  String typePaiement = 'loyer',
+}) async {
+  try {
+    final now = DateTime.now();
+    final response = await _dio.post(
+      '/api/paiements/paiements/',
+      data: {
+        'unite': uniteId,
+        'type_paiement': typePaiement,
+        'mode_paiement': modePaiement,
+        'montant': montant.toInt(),
+        'numero_paiement': numeroPaiement,
+        'periode_debut': '${now.year}-${now.month.toString().padLeft(2, '0')}-01',
+        'periode_fin': '${now.year}-${now.month.toString().padLeft(2, '0')}-30',
+      },
+    );
+    print("==> Paiement effectué : ${response.data}");
+    return response;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
   }
+}
+
+Future<Response> demanderPaiementEspece({
+  required int uniteId,
+  required double montant,
+  String typePaiement = 'loyer',
+}) async {
+  try {
+    final now = DateTime.now();
+    final response = await _dio.post(
+      '/api/paiements/paiements/',
+      data: {
+        'unite': uniteId,
+        'type_paiement': typePaiement,
+        'mode_paiement': 'especes',
+        'montant': montant.toInt(),
+        'numero_paiement': 'ESPECE',
+        'statut': 'en_attente',
+        'periode_debut': '${now.year}-${now.month.toString().padLeft(2, '0')}-01',
+        'periode_fin': '${now.year}-${now.month.toString().padLeft(2, '0')}-30',
+      },
+    );
+    print("==> Demande espèce envoyée : ${response.data}");
+    return response;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
 
   Future<List<dynamic>> getMesPaiements() async {
     try {

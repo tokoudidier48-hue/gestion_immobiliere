@@ -1,5 +1,7 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mobile_flutter/firebase_options.dart';
 import 'package:mobile_flutter/main.dart';
 import 'package:mobile_flutter/service/auth/api.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
@@ -7,6 +9,10 @@ import 'package:mobile_flutter/service/local_storage.dart';
 // Handler pour les messages en arrière-plan
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // ← Firebase doit être initialisé ici aussi
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   print("==> Message reçu en arrière-plan : ${message.notification?.title}");
 }
 
@@ -16,10 +22,12 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'loyasmart_channel',
+    'loyasmart_channel_v3',
     'LoyaSmart Notifications',
     description: 'Notifications importantes de LoyaSmart',
     importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
   );
 
   static Future<void> init() async {
@@ -96,86 +104,38 @@ class NotificationService {
 
   static Future<void> _sendTokenToBackend(String token) async {
   try {
-    final savedToken = await LocalStorage.getFcmToken();
+    final authToken = await LocalStorage.getToken();
 
-    if (savedToken == token) {
-      print("==> Token déjà envoyé");
+    // N'envoie que si connecté
+    if (authToken == null || authToken.isEmpty) {
+      print("==> Non connecté, token FCM gardé pour après login");
       return;
     }
 
     await ApiService().envoyerTokenFCM(token);
     await LocalStorage.saveFcmToken(token);
-
-    print("==> Token envoyé au backend : $token");
+    print("==> Token FCM envoyé au backend : $token");
   } catch (e) {
     print("==> Erreur envoi token backend : $e");
   }
 }
 
-  /*static void _showLocalNotification(RemoteMessage message) {
-  final notification = message.notification;
-  if (notification == null) return;
-print("==> MESSAGE COMPLET : ${message.data}");
-print("==> NOTIFICATION : ${message.notification}");
-  _localNotifications.show(
-    id: notification.hashCode,
-    title: notification.title,
-    body: notification.body,
-    notificationDetails: NotificationDetails(
-      android: AndroidNotificationDetails(
-        _channel.id,
-        _channel.name,
-        channelDescription: _channel.description,
-        importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-      ),
-      iOS: const DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      ),
-    ),
-    payload: message.data.toString(),
-  );
-}*/
-/*
-// Remplace _showLocalNotification par ceci
-static void _showLocalNotification(RemoteMessage message) {
-  final notification = message.notification;
-  final data = message.data;
+static Future<void> renvoyerTokenApresLogin() async {
+  try {
+    final authToken = await LocalStorage.getToken();
+    if (authToken == null || authToken.isEmpty) return;
 
-  final title = notification?.title ?? data['title'] ?? "LoyaSmart";
-  final body = notification?.body ?? data['message'] ?? "Nouvelle notification";
-
-  _localNotifications.show(
-    id: DateTime.now().millisecond, // ← ID unique pour chaque notif
-    title: title,
-    body: body,
-    notificationDetails: NotificationDetails(
-      android: AndroidNotificationDetails(
-        _channel.id,
-        _channel.name,
-        channelDescription: _channel.description,
-        importance: Importance.max,
-        priority: Priority.high,
-        channelShowBadge: true,
-        playSound: true,
-        enableVibration: true,
-        icon: '@mipmap/ic_launcher',
-        styleInformation: BigTextStyleInformation(body),
-      ),
-      iOS: const DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      ),
-    ),
-    payload: data['type'] ?? '',
-  );
-}*/
+    final fcmToken = await _messaging.getToken();
+    if (fcmToken != null) {
+      print("==> Renvoi token FCM après login : $fcmToken");
+      await ApiService().envoyerTokenFCM(fcmToken);
+      await LocalStorage.saveFcmToken(fcmToken);
+      print("==> Token FCM renvoyé avec succès");
+    }
+  } catch (e) {
+    print("==> Erreur renvoi token après login : $e");
+  }
+}
 
 static void _showLocalNotification(RemoteMessage message) {
   final notification = message.notification;
@@ -196,7 +156,7 @@ static void _showLocalNotification(RemoteMessage message) {
                'Nouvelle notification';
 
   _localNotifications.show(
-    id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+    id: DateTime.now().millisecondsSinceEpoch.remainder(10000),
     title: title,
     body: body,
     notificationDetails: NotificationDetails(
@@ -209,7 +169,7 @@ static void _showLocalNotification(RemoteMessage message) {
         channelShowBadge: true,
         playSound: true,
         enableVibration: true,
-        icon: '@mipmap/ic_launcher',
+        icon: 'ic_notification',
         styleInformation: BigTextStyleInformation(body),
       ),
       iOS: const DarwinNotificationDetails(
@@ -221,13 +181,20 @@ static void _showLocalNotification(RemoteMessage message) {
     payload: data['type'] ?? '',
   );
 }
-  static void _handleNotificationTap(Map<String, dynamic> data) {
+ static void _handleNotificationTap(Map<String, dynamic> data) {
   final type = data['type'] ?? '';
+  print("==> Navigation depuis notification type : $type");
 
-  Future.delayed(const Duration(milliseconds: 500), () {
+  Future.delayed(const Duration(milliseconds: 500), () async {
+    final role = await LocalStorage.getRole();
+
     switch (type) {
       case 'message':
-        navigatorKey.currentState?.pushNamed('/messages');
+        if (role == 'proprietaire') {
+          navigatorKey.currentState?.pushNamed('/messages_proprio');
+        } else {
+          navigatorKey.currentState?.pushNamed('/messages');
+        }
         break;
       case 'demande':
       case 'reponse_demande':
