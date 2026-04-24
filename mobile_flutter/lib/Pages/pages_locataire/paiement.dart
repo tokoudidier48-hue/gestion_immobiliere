@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/historique_paiements.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
+import 'package:mobile_flutter/service/locataire/api_locataire.dart';
 import 'package:provider/provider.dart';
 
 class PaiementPage extends StatefulWidget {
@@ -23,12 +24,10 @@ class _PaiementPageState extends State<PaiementPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Si une unité est passée directement → affiche le formulaire directement
     if (widget.unite != null) {
       return _PaiementFormPage(unite: widget.unite!);
     }
 
-    // Sinon → affiche la liste des demandes acceptées
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
@@ -37,8 +36,7 @@ class _PaiementPageState extends State<PaiementPage> {
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: const Text('Paiement',
-            style: TextStyle(
-                color: Colors.black, fontSize: 17, fontWeight: FontWeight.w600)),
+            style: TextStyle(color: Colors.black, fontSize: 17, fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
             icon: const Icon(Icons.history, color: Colors.black54),
@@ -53,7 +51,6 @@ class _PaiementPageState extends State<PaiementPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Filtre uniquement les demandes acceptées
           final demandesAcceptees = provider.demandes
               .where((d) => d['statut'] == 'acceptee')
               .toList();
@@ -66,24 +63,18 @@ class _PaiementPageState extends State<PaiementPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 80, height: 80,
                       decoration: BoxDecoration(
                         color: _primaryColor.withOpacity(0.08),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.payment_outlined,
-                          size: 40, color: _primaryColor),
+                      child: const Icon(Icons.payment_outlined, size: 40, color: _primaryColor),
                     ),
                     const SizedBox(height: 20),
                     const Text(
                       'Aucune chambre disponible\npour le paiement',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          height: 1.5),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.5),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -99,8 +90,7 @@ class _PaiementPageState extends State<PaiementPage> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _primaryColor,
                         side: const BorderSide(color: _primaryColor),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
                   ],
@@ -112,7 +102,6 @@ class _PaiementPageState extends State<PaiementPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // En-tête
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(14),
@@ -123,25 +112,18 @@ class _PaiementPageState extends State<PaiementPage> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle_outline,
-                        color: _primaryColor, size: 20),
+                    const Icon(Icons.check_circle_outline, color: _primaryColor, size: 20),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         '${demandesAcceptees.length} chambre(s) prête(s) au paiement',
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: _primaryColor),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _primaryColor),
                       ),
                     ),
                   ],
                 ),
               ),
-
-              // Liste des chambres acceptées
-              ...demandesAcceptees.map((demande) =>
-                  _buildChambreCard(context, demande)).toList(),
+              ...demandesAcceptees.map((demande) => _buildChambreCard(context, demande)).toList(),
             ],
           );
         },
@@ -155,101 +137,56 @@ class _PaiementPageState extends State<PaiementPage> {
     final uniteType = demande['unite_type'] ?? '';
     final uniteLoyer = demande['unite_loyer']?.toString() ?? '0';
     final proprietaireNom = demande['proprietaire_nom'] ?? '';
-
     final initiales = uniteNom.isNotEmpty ? uniteNom[0].toUpperCase() : 'C';
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => _PaiementFormPage(unite: demande),
-          ),
-        );
+        print("==> Données demande : $demande");
+        Navigator.push(context, MaterialPageRoute(builder: (_) => _PaiementFormPage(unite: demande)));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2)),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: _primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(initiales,
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: _primaryColor)),
-                ),
+                width: 52, height: 52,
+                decoration: BoxDecoration(color: _primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Center(child: Text(initiales, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _primaryColor))),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(uniteNom,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87)),
+                    Text(uniteNom, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
                     const SizedBox(height: 3),
-                    Text(uniteType.replaceAll('_', ' '),
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade500)),
+                    Text(uniteType.replaceAll('_', ' '), style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                     const SizedBox(height: 3),
-                    Text('$uniteLoyer FCFA / mois',
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: _primaryColor)),
+                    Text('$uniteLoyer FCFA / mois', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _primaryColor)),
                     const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(Icons.person_outline,
-                            size: 12, color: Colors.grey),
-                        const SizedBox(width: 3),
-                        Text(proprietaireNom,
-                            style: TextStyle(
-                                fontSize: 11, color: Colors.grey.shade500)),
-                      ],
-                    ),
+                    Row(children: [
+                      const Icon(Icons.person_outline, size: 12, color: Colors.grey),
+                      const SizedBox(width: 3),
+                      Text(proprietaireNom, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    ]),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
-                  children: [
-                    Text('Payer',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.green)),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_ios,
-                        size: 10, color: Colors.green),
-                  ],
-                ),
+                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                child: const Row(children: [
+                  Text('Payer', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green)),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward_ios, size: 10, color: Colors.green),
+                ]),
               ),
             ],
           ),
@@ -275,6 +212,8 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
   int _selectedMainTab = 0;
   int _selectedPayment = 0;
   int _selectedMode = 0;
+  bool _aDejaPayeAvance = false;
+  bool _checkingAvance = true;
   final _phoneController = TextEditingController(text: '+229');
 
   final List<Map<String, dynamic>> _paymentOptions = [
@@ -284,30 +223,98 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    print("==> Données unite reçues : ${widget.unite}");
+    _verifierAvance();
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
   }
 
-  String get _nom => widget.unite['unite_nom'] ?? widget.unite['nom'] ?? 'Logement';
-  String get _loyer => widget.unite['unite_loyer']?.toString() ?? widget.unite['loyer']?.toString() ?? '0';
-  String get _proprietaireNom => widget.unite['proprietaire_nom'] ?? '';
-  int? get _uniteId => widget.unite['unite'] ?? widget.unite['id'];
-  List get _photos => (widget.unite['photos'] as List?) ?? [];
-
-  // Remplace les getters _montant et _caution dans _PaiementFormPageState
-
-String get _caution => widget.unite['prix_caution']?.toString() ?? 
-                       widget.unite['caution']?.toString() ?? '0';
-
-double get _montant {
-  final loyer = double.tryParse(_loyer) ?? 0;
-  if (_selectedMainTab == 0) {
-    // Avance = loyer × 3 (fixe)
-    return loyer * 3;
+  // ── Getters ──────────────────────────────────────────────────────────────
+  // Ajoute ce getter dans _PaiementFormPageState
+  int? get _demandeId {
+    final val = widget.unite['id']; // ← l'ID de la demande
+    if (val is int) return val;
+    return int.tryParse(val?.toString() ?? '');
   }
-  return loyer;
-}
+  String get _nom =>
+      widget.unite['unite_nom'] ?? widget.unite['nom'] ?? 'Logement';
+
+  String get _loyer =>
+      widget.unite['unite_loyer']?.toString() ??
+      widget.unite['loyer']?.toString() ?? '0';
+
+  String get _caution =>
+      widget.unite['unite_caution']?.toString() ??
+      widget.unite['prix_caution']?.toString() ??
+      widget.unite['caution']?.toString() ??
+      (widget.unite['unite_details'] is Map
+          ? widget.unite['unite_details']['prix_caution']?.toString()
+          : null) ?? '0';
+
+  String get _proprietaireNom =>
+      widget.unite['proprietaire_nom']?.toString() ?? '';
+
+  int? get _uniteId {
+    final val = widget.unite['unite'] ?? widget.unite['id'];
+    if (val is int) return val;
+    return int.tryParse(val?.toString() ?? '');
+  }
+
+  List get _photos {
+    final photos = widget.unite['photos'] ??
+        widget.unite['unite_photos'] ??
+        (widget.unite['unite_details'] is Map
+            ? widget.unite['unite_details']['photos']
+            : null);
+    if (photos is List) return photos;
+    return [];
+  }
+
+  double get _montant {
+    final loyer = double.tryParse(_loyer) ?? 0;
+    return _selectedMainTab == 0 ? loyer * 3 : loyer;
+  }
+
+  // ── Vérification avance ──────────────────────────────────────────────────
+
+  Future<void> _verifierAvance() async {
+    try {
+      final api = ApiLocataire();
+      final paiements = await api.getHistoriquePaiements();
+      final uniteId = _uniteId;
+      final avanceExiste = paiements.any((p) {
+        final pUniteId = p['unite'] is int
+            ? p['unite']
+            : int.tryParse(p['unite']?.toString() ?? '');
+        final statut = (p['statut'] ?? '').toString().toLowerCase();
+        final type = (p['type_paiement'] ?? '').toString();
+        final estPaye = statut == 'reussi' ||
+            statut == 'valide' ||
+            statut == 'confirme' ||
+            statut == 'success' ||
+            statut == 'completed' ||
+            statut == 'en_attente';
+        return pUniteId == uniteId && type == 'avance' && estPaye;
+      });
+      if (!mounted) return;
+      setState(() {
+        _aDejaPayeAvance = avanceExiste;
+        if (avanceExiste) _selectedMainTab = 1;
+        _checkingAvance = false;
+      });
+    } catch (e) {
+      print("==> Erreur vérification avance : $e");
+      if (mounted) setState(() => _checkingAvance = false);
+    }
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -319,8 +326,7 @@ double get _montant {
         leading: const BackButton(color: Colors.black87),
         centerTitle: true,
         title: const Text('Paiement LoyaSmart',
-            style: TextStyle(
-                color: Colors.black, fontSize: 17, fontWeight: FontWeight.w600)),
+            style: TextStyle(color: Colors.black, fontSize: 17, fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
             icon: const Icon(Icons.history, color: Colors.black54),
@@ -344,7 +350,17 @@ double get _montant {
     );
   }
 
+  // ── Tabs Avance / Loyer ───────────────────────────────────────────────────
+
   Widget _buildMainTabs() {
+    if (_checkingAvance) {
+      return Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(12),
+        child: const LinearProgressIndicator(),
+      );
+    }
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(12),
@@ -357,22 +373,40 @@ double get _montant {
           children: List.generate(2, (i) {
             final labels = ['Avance', 'Loyer'];
             final selected = _selectedMainTab == i;
+            final isBlocked = i == 0 && _aDejaPayeAvance;
+
             return Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _selectedMainTab = i),
+                onTap: isBlocked ? null : () => setState(() => _selectedMainTab = i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: selected ? _primaryColor : Colors.transparent,
+                    color: selected
+                        ? _primaryColor
+                        : isBlocked
+                            ? Colors.grey.shade200
+                            : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(labels[i],
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: selected ? Colors.white : Colors.grey,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(labels[i],
+                          style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : isBlocked
+                                      ? Colors.grey.shade400
+                                      : Colors.grey,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14)),
+                      if (isBlocked) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.check_circle, size: 13, color: Colors.green.shade400),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -382,20 +416,19 @@ double get _montant {
     );
   }
 
+  // ── Carte logement ────────────────────────────────────────────────────────
+
   Widget _buildLogementCard() {
-    final image = _photos.isNotEmpty ? (_photos[0]['image'] ?? '') : '';
+    final image = _photos.isNotEmpty
+        ? (_photos[0] is Map ? (_photos[0]['image'] ?? '') : _photos[0].toString())
+        : '';
 
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,9 +436,13 @@ double get _montant {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             child: image.isNotEmpty
-                ? Image.network(image,
-                    height: 140, width: double.infinity, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder())
+                ? Image.network(
+                    image,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _placeholder(),
+                  )
                 : _placeholder(),
           ),
           Padding(
@@ -417,26 +454,19 @@ double get _montant {
                   children: [
                     Expanded(
                       child: Text(_nom,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15)),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     ),
                     Text('$_loyer FCFA',
-                        style: const TextStyle(
-                            color: _primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14)),
+                        style: const TextStyle(color: _primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
                   ],
                 ),
                 if (_proprietaireNom.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.person_outline, size: 13, color: Colors.grey),
-                      const SizedBox(width: 3),
-                      Text(_proprietaireNom,
-                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
+                  Row(children: [
+                    const Icon(Icons.person_outline, size: 13, color: Colors.grey),
+                    const SizedBox(width: 3),
+                    Text(_proprietaireNom, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ]),
                 ],
                 const SizedBox(height: 6),
                 Container(
@@ -445,11 +475,12 @@ double get _montant {
                     color: Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text('Caution : $_caution FCFA',
-                      style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.orange,
-                          fontWeight: FontWeight.w600)),
+                  child: Text(
+                    _caution == '0' || _caution.isEmpty
+                        ? 'Caution : Non renseignée'
+                        : 'Caution : $_caution FCFA',
+                    style: const TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
@@ -464,6 +495,8 @@ double get _montant {
       color: Colors.grey.shade200,
       child: const Icon(Icons.apartment, size: 50, color: Colors.grey));
 
+  // ── Toggle En ligne / En espèce ────────────────────────────────────────────
+
   Widget _buildModeToggle() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -471,12 +504,7 @@ double get _montant {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2)),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
@@ -517,6 +545,8 @@ double get _montant {
     );
   }
 
+  // ── Formulaire En ligne ───────────────────────────────────────────────────
+
   Widget _buildFormEnLigne() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -524,12 +554,7 @@ double get _montant {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,32 +566,20 @@ double get _montant {
           const SizedBox(height: 16),
           Text(
             _selectedMainTab == 0 ? 'PRIX DES AVANCES (FCFA)' : 'PRIX DU LOYER (FCFA)',
-            style: const TextStyle(
-                fontSize: 11,
-                color: Colors.grey,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.8),
+            style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600, letterSpacing: 0.8),
           ),
           const SizedBox(height: 6),
           _readonlyField(_montant.toInt().toString()),
           if (_selectedMainTab == 0) ...[
             const SizedBox(height: 14),
             const Text('PRIX DE LA CAUTION (FCFA)',
-                style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8)),
+                style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
             const SizedBox(height: 6),
-            _readonlyField(_caution),
+            _readonlyField(_caution == '0' || _caution.isEmpty ? 'Non renseignée' : _caution),
           ],
           const SizedBox(height: 20),
           const Text('CHOIX DU MODE DE PAIEMENT',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8)),
+              style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
           const SizedBox(height: 12),
           Row(
             children: List.generate(_paymentOptions.length, (i) {
@@ -596,11 +609,7 @@ double get _montant {
           ),
           const SizedBox(height: 20),
           const Text('NUMÉRO DE TÉLÉPHONE',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8)),
+              style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
           const SizedBox(height: 8),
           TextFormField(
             controller: _phoneController,
@@ -624,6 +633,8 @@ double get _montant {
     );
   }
 
+  // ── Formulaire En espèce ──────────────────────────────────────────────────
+
   Widget _buildFormEnEspece() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -631,12 +642,7 @@ double get _montant {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,11 +672,7 @@ double get _montant {
           ),
           const SizedBox(height: 14),
           const Text('MONTANT À PAYER (FCFA)',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8)),
+              style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
           const SizedBox(height: 6),
           _readonlyField(_montant.toInt().toString()),
         ],
@@ -688,15 +690,14 @@ double get _montant {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
           Icon(Icons.lock_outline, size: 16, color: Colors.grey.shade400),
         ],
       ),
     );
   }
+
+  // ── Bouton payer ──────────────────────────────────────────────────────────
 
   Widget _buildBottomButton() {
     return Container(
@@ -708,7 +709,9 @@ double get _montant {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: provider.isLoading ? null : () => _handlePaiement(provider),
+              onPressed: provider.isLoading || _checkingAvance
+                  ? null
+                  : () => _handlePaiement(provider),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -717,10 +720,7 @@ double get _montant {
                   ? const CircularProgressIndicator(color: Colors.white)
                   : Text(
                       _selectedMode == 0 ? 'Payer maintenant' : 'Valider',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600),
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                     ),
             ),
           );
@@ -729,10 +729,15 @@ double get _montant {
     );
   }
 
+  // ── Logique paiement ──────────────────────────────────────────────────────
+
   void _handlePaiement(PaiementProvider provider) async {
     final id = _uniteId;
     print("==> ID envoyé au backend : $id");
-  print("==> Données complètes unité : ${widget.unite}");
+    print("==> Montant : $_montant");
+    print("==> Type : ${_selectedMainTab == 0 ? 'avance' : 'loyer'}");
+    print("==> Mode : ${_selectedMode == 0 ? 'en ligne' : 'espèce'}");
+
     if (id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Unité introuvable')));
@@ -740,24 +745,32 @@ double get _montant {
     }
 
     if (_selectedMode == 0) {
+      // Paiement en ligne
       final success = await provider.effectuerPaiement(
         uniteId: id,
         montant: _montant,
         modePaiement: _paymentOptions[_selectedPayment]['code'],
         numeroPaiement: _phoneController.text.trim(),
         typePaiement: _selectedMainTab == 0 ? 'avance' : 'loyer',
+        demandeId: _demandeId,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(success ? 'Paiement effectué !' : 'Erreur : ${provider.error}'),
         backgroundColor: success ? Colors.green : Colors.red,
       ));
-      if (success) Navigator.pop(context);
+      if (success) {
+        // Bloque l'avance si on vient de payer l'avance
+        if (_selectedMainTab == 0) setState(() => _aDejaPayeAvance = true);
+        Navigator.pop(context);
+      }
     } else {
+      // Paiement en espèce
       final success = await provider.demanderPaiementEspece(
         uniteId: id,
         montant: _montant,
         typePaiement: _selectedMainTab == 0 ? 'avance' : 'loyer',
+        demandeId: _demandeId,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -766,7 +779,10 @@ double get _montant {
             : 'Erreur : ${provider.error}'),
         backgroundColor: success ? Colors.green : Colors.red,
       ));
-      if (success) Navigator.pop(context);
+      if (success) {
+        if (_selectedMainTab == 0) setState(() => _aDejaPayeAvance = true);
+        Navigator.pop(context);
+      }
     }
   }
 }

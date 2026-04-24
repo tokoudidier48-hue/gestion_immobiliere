@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/historique_paiements.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/modificationProfilLocatairePage.dart' hide kLocataireBlue;
+import 'package:mobile_flutter/Pages/pages_locataire/notification_locataire.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/provider/provider_profil.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
@@ -153,7 +156,13 @@ class _ProfilLocatairePageState extends State<ProfilLocatairePage> {
                         iconColor: kLocataireBlue,
                         title: 'Historique des paiements',
                         subtitle: 'Reçus, loyers et cautions',
-                        onTap: () {},
+                        onTap: () {
+                          // Naviguer vers la page d'historique des paiements
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const HistoriquePaiementsPage()),
+                          );
+                        },
                       ),
                       _buildDivider(),
                       _buildMenuItem(
@@ -161,7 +170,12 @@ class _ProfilLocatairePageState extends State<ProfilLocatairePage> {
                         iconColor: kLocataireBlue,
                         title: 'Notifications',
                         subtitle: 'Alertes de paiement et messages',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NotificationLocatairePage()),
+                          );
+                        },
                       ),
                     ],
                   ),

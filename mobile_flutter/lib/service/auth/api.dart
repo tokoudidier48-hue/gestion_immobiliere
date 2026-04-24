@@ -13,7 +13,7 @@ class ApiService {
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
       //baseUrl: 'http://10.190.5.129:8000', // URL de ton API
-      baseUrl: 'http://10.55.17.129:8000', // URL de ton API
+      baseUrl: 'http://10.69.91.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {

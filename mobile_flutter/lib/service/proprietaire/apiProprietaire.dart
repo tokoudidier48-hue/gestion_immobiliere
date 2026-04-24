@@ -11,7 +11,7 @@ class ApiProprietaire {
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
       //baseUrl: 'http://10.190.5.129:8000', // URL de ton API
-      baseUrl: 'http://10.55.17.129:8000', // URL de ton API
+      baseUrl: 'http://10.69.91.129:8000/', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
@@ -388,18 +388,6 @@ Future<void> ajouterLocataireManuel({
     throw Exception('Failed: $e');
   }
 }
-/*
-Future<void> validerPaiementEspece(int paiementId, bool accepter) async {
-  try {
-    final endpoint = accepter ? 'accepter' : 'refuser'; // ✅ CORRECTION ICI
-    await _dio.post('/api/paiements/paiements/$paiementId/$endpoint/');
-  } on DioException catch (e) {
-    if (e.response != null) throw Exception(e.response?.data);
-    throw Exception('Failed: $e');
-  } catch (e) {
-    throw Exception('Failed: $e');
-  }
-}*/
 
 Future<void> accepterPaiement(int id) async {
   await _dio.post('/api/paiements/paiements/$id/accepter/');
@@ -414,6 +402,37 @@ Future<void> refuserPaiement(int id) async {
 Future<void> supprimerLocataire(int locataireId) async {
   try {
     await _dio.delete('/api/locataires/locataires/$locataireId/');
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<List<dynamic>> getPaiementsLocataire(int locataireId) async {
+  try {
+    final response = await _dio.get('/api/locataires/$locataireId/paiements/');
+    print("==> Paiements locataire $locataireId : ${response.data}");
+    return response.data as List;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<void> modifierLocataire({
+  required int locataireId,
+  required Map<String, dynamic> data,
+}) async {
+  try {
+    final response = await _dio.patch(
+      '/api/locataires/$locataireId/',
+      data: data,
+    );
+    print("==> Locataire modifié : ${response.data}");
   } on DioException catch (e) {
     if (e.response != null) throw Exception(e.response?.data);
     throw Exception('Failed: $e');

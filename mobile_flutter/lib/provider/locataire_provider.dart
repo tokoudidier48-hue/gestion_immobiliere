@@ -120,6 +120,7 @@ class PaiementProvider extends ChangeNotifier {
   required String modePaiement,
   required String numeroPaiement,
   String typePaiement = 'loyer',
+  int? demandeId,
 }) async {
   _isLoading = true;
   _error = null;
@@ -131,6 +132,7 @@ class PaiementProvider extends ChangeNotifier {
       modePaiement: modePaiement,
       numeroPaiement: numeroPaiement,
       typePaiement: typePaiement,
+      demandeId: demandeId,
     );
     await fetchPaiements();
     return true;
@@ -147,6 +149,7 @@ Future<bool> demanderPaiementEspece({
   required int uniteId,
   required double montant,
   String typePaiement = 'loyer',
+  int? demandeId,
 }) async {
   _isLoading = true;
   _error = null;
@@ -156,6 +159,7 @@ Future<bool> demanderPaiementEspece({
       uniteId: uniteId,
       montant: montant,
       typePaiement: typePaiement,
+      demandeId: demandeId,
     );
     return true;
   } catch (e) {

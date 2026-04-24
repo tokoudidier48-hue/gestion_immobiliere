@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_propietaire/detail_locataire_page.dart';
+import 'package:mobile_flutter/Pages/pages_propietaire/modifier_locataire_page.dart';
 import 'package:mobile_flutter/service/proprietaire/apiProprietaire.dart';
 
 const Color kPrimaryLoc = Color(0xFF2563EB);
@@ -27,7 +29,35 @@ class _LocatairesPageState extends State<LocatairesPage> {
     _fetchAll();
   }
 
-  Future<void> _fetchAll() async {
+  Future<void> _fetchLocataires() async {
+  try {
+    final data = await _api.getLocataires(proprieteId: widget.proprieteId);
+    if (!mounted) return; // ← vérifie avant setState
+    setState(() => _locataires = data);
+  } catch (e) {
+    if (!mounted) return; // ← vérifie avant setState
+    setState(() => _error = e.toString());
+  }
+}
+
+Future<void> _fetchPaiementsEnAttente() async {
+  try {
+    final data = await _api.getPaiementsEspece(proprieteId: widget.proprieteId);
+    if (!mounted) return; // ← vérifie avant setState
+    setState(() {
+      _paiementsEnAttente = data.where((p) =>
+          p['mode_paiement'] == 'especes' &&
+          p['statut'] == 'en_attente'
+      ).toList();
+      print("Paiements en attente : $_paiementsEnAttente");
+    });
+  } catch (e) {
+    print("ERREUR PAIEMENTS: $e");
+  }
+}
+
+Future<void> _fetchAll() async {
+  if (!mounted) return; // ← vérifie dès le début
   setState(() {
     _isLoading = true;
     _error = null;
@@ -35,43 +65,14 @@ class _LocatairesPageState extends State<LocatairesPage> {
 
   try {
     await _fetchPaiementsEnAttente();
-
+    if (!mounted) return;
     await _fetchLocataires();
   } catch (e) {
-    setState(() {
-      _error = e.toString();
-    });
-  } finally {
-    setState(() {
-      _isLoading = false;
-    });
-  }
-}
-
-  Future<void> _fetchLocataires() async {
-  try {
-    final data = await _api.getLocataires(proprieteId: widget.proprieteId);
-    setState(() => _locataires = data);
-  } catch (e) {
+    if (!mounted) return;
     setState(() => _error = e.toString());
-  }
-}
-
-  Future<void> _fetchPaiementsEnAttente() async {
-  try {
-    final data = await _api.getPaiementsEspece(
-      proprieteId: widget.proprieteId,
-    );
-
-    setState(() {
-      _paiementsEnAttente = data.where((p) =>
-          p['mode_paiement'] == 'especes' &&
-          p['statut'] == 'en_attente' // 🔥 IMPORTANT
-      ).toList();
-      print("Paiements en attente : $_paiementsEnAttente");
-    });
-  } catch (e) {
-    print("ERREUR PAIEMENTS: $e");
+  } finally {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
   }
 }
 
@@ -194,34 +195,34 @@ class _LocatairesPageState extends State<LocatairesPage> {
 */
 
       Expanded(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? _buildError()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: locatairesTries.length,
-                    itemBuilder: (_, i) {
-                      final locataire = locatairesTries[i];
-
-                      final hasPaiement = _paiementsEnAttente.any(
-                        (p) => p['locataire'] == locataire['utilisateur'],
-                      );
-
-                      return Column(
-                        children: [
-                          if (hasPaiement)
-                            _buildPaiementAttenteCard(
-                              _paiementsEnAttente.firstWhere(
-                                (p) => p['locataire'] == locataire['utilisateur'],
-                              ),
+  child: _isLoading
+      ? const Center(child: CircularProgressIndicator())
+      : _error != null
+          ? _buildError()
+          : filtered.isEmpty
+              ? _buildEmpty()  // ← ajoute ce cas
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: locatairesTries.length,
+                  itemBuilder: (_, i) {
+                    final locataire = locatairesTries[i];
+                    final hasPaiement = _paiementsEnAttente.any(
+                      (p) => p['locataire'] == locataire['utilisateur'],
+                    );
+                    return Column(
+                      children: [
+                        if (hasPaiement)
+                          _buildPaiementAttenteCard(
+                            _paiementsEnAttente.firstWhere(
+                              (p) => p['locataire'] == locataire['utilisateur'],
                             ),
-                          _buildLocataireCard(locataire),
-                        ],
-                      );
-                    },
-                  ),
-      ),
+                          ),
+                        _buildLocataireCard(locataire),
+                      ],
+                    );
+                  },
+                ),
+),
     ],
   ),
 ),
@@ -350,8 +351,7 @@ class _LocatairesPageState extends State<LocatairesPage> {
                       _locBtn('Voir détail', true,
                           () => _showDetailLocataire(l)),
                       const SizedBox(width: 8),
-                      _locBtn('Modifier', false,
-                          () => _showDetailLocataire(l)),
+                      _locBtn('Modifier', false, () => _showModifierLocataire(l)),
                       const Spacer(),
                       GestureDetector(
                         onTap: () => _confirmerSuppression(l),
@@ -561,92 +561,26 @@ class _LocatairesPageState extends State<LocatairesPage> {
     );
   }
 
-  void _showDetailLocataire(dynamic l) {
-    final nomComplet =
-        '${l['nom'] ?? ''} ${l['prenom'] ?? ''}'.trim();
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2))),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: kPrimaryLoc.withOpacity(0.1),
-                  child: Text(
-                    nomComplet.isNotEmpty
-                        ? nomComplet[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: kPrimaryLoc),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(nomComplet,
-                          style: const TextStyle(
-                              fontSize: 17, fontWeight: FontWeight.bold)),
-                      Text(l['email'] ?? '',
-                          style: TextStyle(
-                              fontSize: 13, color: Colors.grey.shade500)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _detailRow(Icons.phone_outlined, 'Téléphone',
-                l['telephone'] ?? '—'),
-            _detailRow(Icons.home_outlined, 'Unité',
-                l['unite_nom']?.toString() ?? '—'),
-            _detailRow(Icons.payments_outlined, 'Loyer',
-                '${l['loyer'] ?? l['montant'] ?? 0} FCFA / mois'),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
+ void _showDetailLocataire(dynamic l) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => DetailLocatairePage(locataire: l)),
+  );
+}
 
-  Widget _detailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Colors.grey),
-          const SizedBox(width: 10),
-          Text('$label : ',
-              style:
-                  TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 13),
-                overflow: TextOverflow.ellipsis),
-          ),
-        ],
+void _showModifierLocataire(dynamic l) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ModifierLocatairePage(
+        locataire: l,
+        onModified: _fetchLocataires,
       ),
-    );
-  }
+    ),
+  );
+}
+
+
 
   Future<void> _confirmerSuppression(dynamic l) async {
     final nomComplet =

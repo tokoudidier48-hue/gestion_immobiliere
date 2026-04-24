@@ -12,7 +12,7 @@ class DetailDemandeNotifPage extends StatefulWidget {
 
 class _DetailDemandeNotifPageState extends State<DetailDemandeNotifPage> {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.55.17.129:8000',
+    baseUrl: 'http://10.69.91.129:8000',
     headers: {'Content-Type': 'application/json'},
   ));
 

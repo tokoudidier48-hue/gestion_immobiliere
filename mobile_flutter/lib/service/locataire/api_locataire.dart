@@ -7,7 +7,7 @@ class ApiLocataire {
   ApiLocataire() : _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://10.190.5.129:8000',
-      baseUrl: 'http://10.55.17.129:8000', // URL de ton API
+      baseUrl: 'http://10.69.91.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {'Content-Type': 'application/json'},
@@ -112,25 +112,28 @@ class ApiLocataire {
   required String modePaiement,
   required String numeroPaiement,
   String typePaiement = 'loyer',
+  int? demandeId, // ← ajoute
 }) async {
   try {
     final now = DateTime.now();
-    final response = await _dio.post(
-      '/api/paiements/paiements/',
-      data: {
-        'unite': uniteId,
-        'type_paiement': typePaiement,
-        'mode_paiement': modePaiement,
-        'montant': montant.toInt(),
-        'numero_paiement': numeroPaiement,
-        'periode_debut': '${now.year}-${now.month.toString().padLeft(2, '0')}-01',
-        'periode_fin': '${now.year}-${now.month.toString().padLeft(2, '0')}-30',
-      },
-    );
+    final data = <String, dynamic>{
+      'unite': uniteId,
+      'type_paiement': typePaiement,
+      'mode_paiement': modePaiement,
+      'montant': montant.toInt(),
+      'numero_paiement': numeroPaiement,
+      'periode_debut': '${now.year}-${now.month.toString().padLeft(2, '0')}-01',
+      'periode_fin': '${now.year}-${now.month.toString().padLeft(2, '0')}-30',
+      if (demandeId != null) 'demande': demandeId, // ← ajoute
+    };
+    final response = await _dio.post('/api/paiements/paiements/', data: data);
     print("==> Paiement effectué : ${response.data}");
     return response;
   } on DioException catch (e) {
-    if (e.response != null) throw Exception(e.response?.data);
+    if (e.response != null) {
+      print("==> Erreur paiement : ${e.response?.data}");
+      throw Exception(e.response?.data);
+    }
     throw Exception('Failed: $e');
   } catch (e) {
     throw Exception('Failed: $e');
@@ -141,6 +144,7 @@ Future<Response> demanderPaiementEspece({
   required int uniteId,
   required double montant,
   String typePaiement = 'loyer',
+  int? demandeId, // ← ajoute 
 }) async {
   try {
     final now = DateTime.now();
@@ -155,6 +159,7 @@ Future<Response> demanderPaiementEspece({
         'statut': 'en_attente',
         'periode_debut': '${now.year}-${now.month.toString().padLeft(2, '0')}-01',
         'periode_fin': '${now.year}-${now.month.toString().padLeft(2, '0')}-30',
+        if (demandeId != null) 'demande': demandeId, // ← ajoute
       },
     );
     print("==> Demande espèce envoyée : ${response.data}");
@@ -192,6 +197,48 @@ Future<Response> demanderPaiementEspece({
       throw Exception('Failed to fetch receipt: $e');
     }
   }
+
+  Future<List<dynamic>> getHistoriquePaiements() async {
+  try {
+    final response = await _dio.get('/api/paiements/paiements/');
+    print("==> Historique paiements : ${response.data}");
+    return response.data as List;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<dynamic> getDetailRecu(int recuId) async {
+  try {
+    final response = await _dio.get('/api/paiements/recus/$recuId/');
+    print("==> Détail reçu $recuId : ${response.data}");
+    return response.data;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<List<int>> telechargerRecuPdf(int recuId) async {
+  try {
+    final response = await _dio.post(
+      '/api/paiements/recus/$recuId/telecharger/',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    print("==> PDF téléchargé pour reçu $recuId");
+    return List<int>.from(response.data);
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
 
   // ── MESSAGERIE ────────────────────────────────────────────────────────────
 
