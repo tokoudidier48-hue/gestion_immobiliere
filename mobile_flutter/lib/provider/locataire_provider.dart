@@ -170,7 +170,6 @@ Future<bool> demanderPaiementEspece({
     notifyListeners();
   }
 }
-
   
 }
 

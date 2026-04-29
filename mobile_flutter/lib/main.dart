@@ -3,6 +3,7 @@ import 'package:mobile_flutter/Pages/pages_locataire/mes_demandes.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/message_locataire.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/Pages/pages_propietaire/message.dart';
+import 'package:mobile_flutter/widgets/session_wrapper.dart';
 import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
@@ -170,9 +171,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
           case StartState.onboarding:
             return OnboarningPages();
           case StartState.locataire:
-            return const AccueilLocatairePage();
+            return SessionWrapper(child: const AccueilLocatairePage());
           case StartState.proprietaire:
-            return const HomePageProprietaire();
+            return SessionWrapper(child: const HomePageProprietaire());
           case StartState.login:
           default:
             return const Connexion();

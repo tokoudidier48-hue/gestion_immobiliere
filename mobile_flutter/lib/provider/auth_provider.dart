@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_flutter/model/utilisateur.dart';
 import 'package:mobile_flutter/service/auth/api.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/service/session_service.dart';
 
 class UtilisateurProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -90,6 +91,7 @@ class UtilisateurProvider with ChangeNotifier {
     _user = null;
     _token = null;
     _error = null;
+    SessionService.stop();
     await LocalStorage.saveToken('');
     await LocalStorage.setFirstLaunch(false);
     _apiService.clearToken();

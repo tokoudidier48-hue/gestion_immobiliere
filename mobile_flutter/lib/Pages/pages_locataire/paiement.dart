@@ -133,67 +133,104 @@ class _PaiementPageState extends State<PaiementPage> {
   }
 
   Widget _buildChambreCard(BuildContext context, dynamic demande) {
-    final uniteNom = demande['unite_nom'] ?? 'Chambre';
-    final uniteType = demande['unite_type'] ?? '';
-    final uniteLoyer = demande['unite_loyer']?.toString() ?? '0';
-    final proprietaireNom = demande['proprietaire_nom'] ?? '';
-    final initiales = uniteNom.isNotEmpty ? uniteNom[0].toUpperCase() : 'C';
+  final uniteNom = demande['unite_nom'] ?? 'Chambre';
+  final uniteType = demande['unite_type'] ?? '';
+  final uniteLoyer = demande['unite_loyer']?.toString() ?? '0';
+  final proprietaireNom = demande['proprietaire_nom'] ?? '';
+  final photoPath = demande['unite_photo']?.toString() ?? '';
+  
+  const baseUrl = 'http://10.199.70.129:8000';
+  final fullUrl = photoPath.isNotEmpty
+      ? (photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath')
+      : '';
 
-    return GestureDetector(
-      onTap: () {
-        print("==> Données demande : $demande");
-        Navigator.push(context, MaterialPageRoute(builder: (_) => _PaiementFormPage(unite: demande)));
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 52, height: 52,
-                decoration: BoxDecoration(color: _primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Center(child: Text(initiales, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _primaryColor))),
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => _PaiementFormPage(unite: demande)));
+    },
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2))],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 52,
+                height: 52,
+                color: Colors.grey.shade200,
+                child: fullUrl.isNotEmpty
+                    ? Image.network(
+                        fullUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.apartment, color: Colors.grey),
+                      )
+                    : const Icon(Icons.apartment, color: Colors.grey),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(uniteNom, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
-                    const SizedBox(height: 3),
-                    Text(uniteType.replaceAll('_', ' '), style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                    const SizedBox(height: 3),
-                    Text('$uniteLoyer FCFA / mois', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _primaryColor)),
-                    const SizedBox(height: 3),
-                    Row(children: [
-                      const Icon(Icons.person_outline, size: 12, color: Colors.grey),
-                      const SizedBox(width: 3),
-                      Text(proprietaireNom, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                    ]),
-                  ],
-                ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(uniteNom,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87)),
+                  const SizedBox(height: 3),
+                  Text(uniteType.replaceAll('_', ' '),
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade500)),
+                  const SizedBox(height: 3),
+                  Text('$uniteLoyer FCFA / mois',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _primaryColor)),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    const Icon(Icons.person_outline, size: 12, color: Colors.grey),
+                    const SizedBox(width: 3),
+                    Text(proprietaireNom,
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade500)),
+                  ]),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Row(children: [
-                  Text('Payer', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green)),
-                  SizedBox(width: 4),
-                  Icon(Icons.arrow_forward_ios, size: 10, color: Colors.green),
-                ]),
-              ),
-            ],
-          ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8)),
+              child: const Row(children: [
+                Text('Payer',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green)),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward_ios, size: 10, color: Colors.green),
+              ]),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ─── Page formulaire de paiement ─────────────────────────────────────────────
@@ -214,7 +251,7 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
   int _selectedMode = 0;
   bool _aDejaPayeAvance = false;
   bool _checkingAvance = true;
-  final _phoneController = TextEditingController(text: '+229');
+  final _phoneController = TextEditingController(text: '(+229)');
 
   final List<Map<String, dynamic>> _paymentOptions = [
     {'label': 'MoMo', 'color': const Color(0xFFFFCC00), 'textColor': Colors.black, 'code': 'mtn'},
@@ -251,8 +288,6 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
 
   String get _caution =>
       widget.unite['unite_caution']?.toString() ??
-      widget.unite['prix_caution']?.toString() ??
-      widget.unite['caution']?.toString() ??
       (widget.unite['unite_details'] is Map
           ? widget.unite['unite_details']['prix_caution']?.toString()
           : null) ?? '0';
@@ -267,10 +302,9 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
   }
 
   List get _photos {
-    final photos = widget.unite['photos'] ??
-        widget.unite['unite_photos'] ??
-        (widget.unite['unite_details'] is Map
-            ? widget.unite['unite_details']['photos']
+    final photos = widget.unite['unite_photo'] ??
+        (widget.unite['unite_photo'] is Map
+            ? widget.unite['unite_photo']['photos']['0'] ?? widget.unite['unite_details']['photos']
             : null);
     if (photos is List) return photos;
     return [];
@@ -419,76 +453,99 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
   // ── Carte logement ────────────────────────────────────────────────────────
 
   Widget _buildLogementCard() {
-    final image = _photos.isNotEmpty
-        ? (_photos[0] is Map ? (_photos[0]['image'] ?? '') : _photos[0].toString())
-        : '';
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            child: image.isNotEmpty
-                ? Image.network(
-                    image,
-                    height: 140,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder(),
-                  )
-                : _placeholder(),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(_nom,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    ),
-                    Text('$_loyer FCFA',
-                        style: const TextStyle(color: _primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
-                if (_proprietaireNom.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Row(children: [
-                    const Icon(Icons.person_outline, size: 13, color: Colors.grey),
-                    const SizedBox(width: 3),
-                    Text(_proprietaireNom, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  ]),
-                ],
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    _caution == '0' || _caution.isEmpty
-                        ? 'Caution : Non renseignée'
-                        : 'Caution : $_caution FCFA',
-                    style: const TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  const baseUrl = 'http://10.199.70.129:8000';
+  
+  // Priorité : unite_photo → photos liste
+  String imageUrl = '';
+  final photoPath = widget.unite['unite_photo']?.toString() ?? '';
+  
+  if (photoPath.isNotEmpty) {
+    imageUrl = photoPath.startsWith('http')
+        ? photoPath
+        : '$baseUrl$photoPath';
+  } else if (_photos.isNotEmpty) {
+    final p = _photos[0];
+    final raw = p is Map ? (p['image'] ?? '') : p.toString();
+    imageUrl = raw.startsWith('http') ? raw : '$baseUrl$raw';
   }
+
+  return Container(
+    margin: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: [BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 8,
+          offset: const Offset(0, 2))],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+          child: imageUrl.isNotEmpty
+              ? Image.network(
+                  imageUrl,
+                  height: 140,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _placeholder(),
+                )
+              : _placeholder(),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(_nom,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                  Text('$_loyer FCFA',
+                      style: const TextStyle(
+                          color: _primaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                ],
+              ),
+              if (_proprietaireNom.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  const Icon(Icons.person_outline, size: 13, color: Colors.grey),
+                  const SizedBox(width: 3),
+                  Text(_proprietaireNom,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                ]),
+              ],
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  _caution == '0' || _caution.isEmpty
+                      ? 'Caution : Non renseignée'
+                      : 'Caution : $_caution FCFA',
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.orange,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _placeholder() => Container(
       height: 140,

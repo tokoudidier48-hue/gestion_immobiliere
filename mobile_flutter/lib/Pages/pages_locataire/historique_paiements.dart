@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/detail_recu.dart';
-import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/service/locataire/api_locataire.dart';
 
 class HistoriquePaiementsPage extends StatefulWidget {

@@ -8,6 +8,7 @@ import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/provider/provider_profil.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/service/session_service.dart';
 import 'package:provider/provider.dart';
 
 class ProfilLocatairePage extends StatefulWidget {
@@ -204,10 +205,12 @@ class _ProfilLocatairePageState extends State<ProfilLocatairePage> {
                                 ElevatedButton(
                                   onPressed: () async {
                                     await LocalStorage.clearAll(); // ← vide tout
+                                    SessionService.stop(); // ← arrête les timers de session
                                     auth.logout();
-                                    Navigator.pushReplacement(
+                                    Navigator.pushAndRemoveUntil(
                                       context,
                                       MaterialPageRoute(builder: (_) => const Connexion()),
+                                      (route) => false,
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(

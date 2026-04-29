@@ -3,6 +3,7 @@ import 'package:mobile_flutter/Pages/pages_locataire/details_logement_demande.da
 import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_flutter/service/locataire/api_locataire.dart'; 
 
 class MesDemandesPage extends StatefulWidget {
   const MesDemandesPage({super.key});
@@ -12,6 +13,27 @@ class MesDemandesPage extends StatefulWidget {
 }
 
 class _MesDemandesPageState extends State<MesDemandesPage> {
+
+
+Widget _buildUniteImage(String? photoPath, IconData fallbackIcon) {
+  if (photoPath == null || photoPath.isEmpty) {
+    return Icon(fallbackIcon, color: const Color(0xFF1A3C6E), size: 36);
+  }
+  final fullUrl = photoPath.startsWith('http')
+      ? photoPath
+      : '$kBaseUrl$photoPath';
+  return ClipRRect(
+    borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+    child: Image.network(
+      fullUrl,
+      width: 90,
+      height: 90,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          Icon(fallbackIcon, color: const Color(0xFF1A3C6E), size: 36),
+    ),
+  );
+}
 
   @override
   void initState() {
@@ -106,11 +128,13 @@ class _MesDemandesPageState extends State<MesDemandesPage> {
   Widget _buildDemandeCard(BuildContext context, DemandeProvider provider, dynamic demande) {
     final statut = demande['statut'] ?? 'en_attente';
     final titre = demande['unite_nom'] ?? 'Unité sans nom';         // ← était unite_details['nom']
+    final caution = demande['unite_caution']?.toString() ?? '0';              // ← nouveau
     final type = demande['unite_type'] ?? '';                        // ← nouveau
     final loyer = demande['unite_loyer']?.toString() ?? '0';         // ← nouveau
     final proprietaire = demande['proprietaire_nom'] ?? '';           // ← nouveau
     final date = demande['date_demande'] ?? '';
     final demandeId = demande['id'];
+    final photo = demande['unite_photo'] ?? '';                      // ← nouveau, peut être null ou vide
 
     IconData typeIcon;
     switch (type) {
@@ -171,6 +195,7 @@ class _MesDemandesPageState extends State<MesDemandesPage> {
               Row(
                 children: [
                   // Icône à la place de l'image (pas de photo dans la réponse)
+                  // Dans _buildDemandeCard, remplace le Container de la photo
                   Container(
                     width: 90,
                     height: 90,
@@ -178,7 +203,7 @@ class _MesDemandesPageState extends State<MesDemandesPage> {
                       color: const Color(0xFF1A3C6E).withOpacity(0.08),
                       borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
                     ),
-                    child: Icon(typeIcon, color: const Color(0xFF1A3C6E), size: 36),
+                    child: _buildUniteImage(photo, typeIcon),
                   ),
                   // Contenu
                   Expanded(

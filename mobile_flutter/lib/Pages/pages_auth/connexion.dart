@@ -33,6 +33,7 @@ class _ConnexionState extends State<Connexion> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
         appBar: AppBar(
+          automaticallyImplyLeading: false,
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: const Text(
@@ -201,7 +202,7 @@ class _ConnexionState extends State<Connexion> {
                   socialButton(Image(image: AssetImage('assets/images/logo_google.png'), width: 20), Colors.blue),
                   socialButton(Icon(Icons.facebook,color:  Colors.blue,), Colors.blue),
                 ],
-              ),
+              ), 
 
               const SizedBox(height: 20),
 

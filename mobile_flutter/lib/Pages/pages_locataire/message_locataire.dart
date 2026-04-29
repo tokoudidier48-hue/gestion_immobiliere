@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
-import 'package:mobile_flutter/service/notification_service.dart';
 import 'package:provider/provider.dart';
 
 const Color kLocataireBlue = Color(0xFF1A3C6E);
@@ -105,14 +104,42 @@ class _MessageLocatairePageState extends State<MessageLocatairePage> {
                   );
                 }
                 final filtered = provider.conversations.where((conv) {
-                  final autre = _getAutreParticipant(conv);
-                  final nom = _getNomComplet(autre).toLowerCase();
-                  return _searchController.text.isEmpty || nom.contains(_searchController.text.toLowerCase());
-                }).toList();
-                return ListView.separated(
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => Divider(height: 1, indent: 72, color: Colors.grey.shade100),
-                  itemBuilder: (context, index) => _buildConversationTile(context, filtered[index]),
+                final autre = _getAutreParticipant(conv);
+                final nom = _getNomComplet(autre).toLowerCase();
+                return _searchController.text.isEmpty ||
+                    nom.contains(_searchController.text.toLowerCase());
+              }).toList();
+
+              filtered.sort((a, b) {
+
+                  final msgA = a['dernier_message'];
+                  final msgB = b['dernier_message'];
+
+                  final dateA = DateTime.tryParse(
+                      msgA is Map ? msgA['date'] ?? '' : a['date_dernier_message'] ?? ''
+                  ) ?? DateTime(2000);
+
+                  final dateB = DateTime.tryParse(
+                      msgB is Map ? msgB['date'] ?? '' : b['date_dernier_message'] ?? ''
+                  ) ?? DateTime(2000);
+
+                  return dateB.compareTo(dateA);
+
+                });
+               return RefreshIndicator(
+                  color: kLocataireBlue,
+                  backgroundColor: Colors.white,
+                  onRefresh: () async {
+                    await context.read<MessageProvider>().fetchConversations();
+                  },
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(), // IMPORTANT
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, indent: 72, color: Colors.grey.shade100),
+                    itemBuilder: (context, index) =>
+                        _buildConversationTile(context, filtered[index]),
+                  ),
                 );
               },
             ),
@@ -192,11 +219,22 @@ class _MessageLocatairePageState extends State<MessageLocatairePage> {
                 Text(time, style: TextStyle(fontSize: 11, color: hasUnread ? kLocataireBlue : Colors.grey.shade400)),
                 const SizedBox(height: 4),
                 if (hasUnread)
-                  Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: const BoxDecoration(color: kLocataireBlue, shape: BoxShape.circle),
-                    child: Text('$nonLus', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Text(
+                    '$nonLus',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
@@ -256,30 +294,51 @@ class _ChatPageState extends State<ChatPage> {
     Future.microtask(() async {
       _currentUserId = await LocalStorage.getUserId() ?? '';
       if (mounted) await context.read<MessageProvider>().fetchMessages(widget.conversationId);
-      _startPolling();
+      _startConversationPolling();
+      _startMessagePolling();
     });
   }
 
-  void _startPolling() {
-    Future.delayed(const Duration(seconds: 3), () async {
-      if (!mounted) return;
-      await context.read<MessageProvider>().fetchMessages(widget.conversationId);
-      _startPolling();
-    });
-  }
+  
+  void _startMessagePolling() {
+  Future.delayed(const Duration(seconds: 3), () async {
+    if (!mounted) return;
+    await context.read<MessageProvider>().fetchMessages(widget.conversationId);
+    _startMessagePolling();
+  });
+}
+
+  void _startConversationPolling() {
+  Future.delayed(const Duration(seconds: 5), () async {
+    if (!mounted) return;
+    await context.read<MessageProvider>().fetchConversations();
+    _startConversationPolling();
+  });
+}
 
   void _sendMessage() async {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    _messageController.clear();
-    await context.read<MessageProvider>().envoyerMessageDirect(widget.conversationId, text);
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-      }
-    });
-  }
+  final text = _messageController.text.trim();
+  if (text.isEmpty) return;
+
+  _messageController.clear();
+
+  await context.read<MessageProvider>()
+      .envoyerMessageDirect(widget.conversationId, text);
+
+  // recharge les messages
+  await context.read<MessageProvider>()
+      .fetchMessages(widget.conversationId);
+
+  Future.delayed(const Duration(milliseconds: 100), () {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  });
+}
 
   void _showMessageOptions(int messageId, String contenuActuel) {
     showModalBottomSheet(

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
+import 'package:mobile_flutter/Pages/pages_propietaire/a_propos.dart';
+import 'package:mobile_flutter/Pages/pages_propietaire/evolution_financiere.dart';
 import 'package:mobile_flutter/Pages/pages_propietaire/modifier_profil.dart';
+import 'package:mobile_flutter/Pages/pages_propietaire/proprio_notification.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/provider/provider_profil.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/service/session_service.dart';
 import 'package:provider/provider.dart';
 
 class MonProfilPage extends StatefulWidget {
@@ -155,7 +159,6 @@ class _MonProfilPageState extends State<MonProfilPage> {
               ),
 
               const SizedBox(height: 16),
-
               // ── MENU ──────────────────────────────────────────────────
               Container(
                 color: Colors.white,
@@ -178,14 +181,24 @@ class _MonProfilPageState extends State<MonProfilPage> {
                       iconColor: const Color(0xFF1565C0),
                       title: 'Finances',
                       subtitle: "Évolution du chiffre d'affaires",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const EvolutionFinancesPage()),
+                        );
+                      },
                     ),
                     _buildDivider(),
                     _buildMenuItem(
                       icon: Icons.notifications_outlined,
                       iconColor: const Color(0xFF1565C0),
                       title: 'Notifications',
-                      onTap: () {},
+                      onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                          );
+                      },
                       hasDot: true,
                     ),
                     _buildDivider(),
@@ -193,7 +206,13 @@ class _MonProfilPageState extends State<MonProfilPage> {
                       icon: Icons.info_outline,
                       iconColor: const Color(0xFF1565C0),
                       title: 'À propos de LoyaSmart',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AProposPage()),
+                        );
+
+                      },
                     ),
                   ],
                 ),
@@ -328,10 +347,12 @@ class _MonProfilPageState extends State<MonProfilPage> {
               return ElevatedButton(
             onPressed: () async {
               await LocalStorage.clearAll(); // ← vide tout
+              SessionService.stop(); // ← arrête les timers de session
                   auth.logout();
-                  Navigator.pushReplacement(
+                  Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const Connexion())
+                    MaterialPageRoute(builder: (_) => const Connexion()),
+                    (route) => false,
                   );
                 },
             style: ElevatedButton.styleFrom(

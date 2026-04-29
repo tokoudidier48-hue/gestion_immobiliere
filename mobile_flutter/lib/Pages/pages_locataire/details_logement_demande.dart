@@ -25,6 +25,11 @@ class _DetailsLogementDepuisDemandePage
     final message = d['message'] ?? '';
     final uniteId = d['unite'];
     final demandeId = d['id'];
+    final photoPath = d['unite_photo']?.toString() ?? '';
+    const baseUrl = 'http://10.199.70.129:8000';
+    final fullImageUrl = photoPath.isNotEmpty
+        ? (photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath')
+        : '';
 
     Color statutColor;
     String statutLabel;
@@ -61,9 +66,29 @@ class _DetailsLogementDepuisDemandePage
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // ── STATUT ────────────────────────────────────────────
+child: Column(
+  
+  children: [
+    if (fullImageUrl.isNotEmpty)
+  Container(
+    margin: const EdgeInsets.only(bottom: 14),
+    height: 160,
+    width: double.infinity,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(14),
+      color: Colors.grey.shade200,
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Image.network(
+        fullImageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(
+            Icons.apartment, size: 60, color: Colors.grey),
+      ),
+    ),
+  ),
+    // ── STATUT ────────────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),

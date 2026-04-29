@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
-
+const String kBaseUrl = 'http://10.199.70.129:8000';
 class ApiLocataire {
   final Dio _dio;
 
   ApiLocataire() : _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://10.190.5.129:8000',
-      baseUrl: 'http://10.69.91.129:8000', // URL de ton API
+      baseUrl: 'http://10.199.70.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {'Content-Type': 'application/json'},
@@ -56,6 +56,7 @@ class ApiLocataire {
       print("==> Récupération des demandes");
       final response = await _dio.get('/api/locations/demandes/');
       print("==> Réponse : ${response.data}");
+      print("==> dhdbr : ${response}");
       return response.data as List;
     } on DioException catch (e) {
       if (e.response != null) {
@@ -186,18 +187,6 @@ Future<Response> demanderPaiementEspece({
     }
   }
 
-  Future<dynamic> getRecu(int recuId) async {
-    try {
-      final response = await _dio.get('/api/paiements/recus/$recuId/');
-      return response.data;
-    } on DioException catch (e) {
-      if (e.response != null) throw Exception(e.response?.data);
-      throw Exception('Failed to fetch receipt: $e');
-    } catch (e) {
-      throw Exception('Failed to fetch receipt: $e');
-    }
-  }
-
   Future<List<dynamic>> getHistoriquePaiements() async {
   try {
     final response = await _dio.get('/api/paiements/paiements/');
@@ -210,6 +199,19 @@ Future<Response> demanderPaiementEspece({
     throw Exception('Failed: $e');
   }
 }
+
+
+  Future<dynamic> getRecu(int recuId) async {
+    try {
+      final response = await _dio.get('/api/paiements/recus/$recuId/');
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response != null) throw Exception(e.response?.data);
+      throw Exception('Failed to fetch receipt: $e');
+    } catch (e) {
+      throw Exception('Failed to fetch receipt: $e');
+    }
+  }
 
 Future<dynamic> getDetailRecu(int recuId) async {
   try {
@@ -224,14 +226,107 @@ Future<dynamic> getDetailRecu(int recuId) async {
   }
 }
 
+
+Future<dynamic?> getRecuParPaiement(int paiementId) async {
+  try {
+    final response = await _dio.get('/api/paiements/recus/');
+
+    final List recus = response.data;
+
+    return recus.firstWhere(
+      (r) => r['paiement'] == paiementId,
+      orElse: () => null,
+    );
+  } on DioException catch (e) {
+    throw Exception(e.response?.data ?? 'Erreur getRecuParPaiement');
+  }
+}
+
+Future<String> getRecuPdfUrl(int recuId) async {
+  try {
+    // 1. Essaie d'abord de télécharger directement
+    final response = await _dio.get(
+      '/api/paiements/recus/$recuId/telecharger/',
+      options: Options(
+        responseType: ResponseType.bytes,
+        followRedirects: true,
+        validateStatus: (status) => status != null && status < 500,
+      ),
+    );
+
+    // Si c'est du JSON avec une URL
+    if (response.headers.value('content-type')?.contains('json') == true) {
+      final data = response.data;
+      final url = data['url'] ?? data['pdf_url'] ?? data['file'];
+      if (url != null) return url.toString();
+      throw Exception("PDF pas encore généré côté serveur");
+    }
+
+    // Si c'est directement le PDF en bytes → on retourne un flag spécial
+    return '__BYTES__:$recuId';
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  }
+}
+    // Télécharge directement le PDF en bytes via GET /download/
 Future<List<int>> telechargerRecuPdf(int recuId) async {
   try {
-    final response = await _dio.post(
-      '/api/paiements/recus/$recuId/telecharger/',
-      options: Options(responseType: ResponseType.bytes),
+    final response = await _dio.get(
+      '/api/paiements/recus/$recuId/download/',
+      options: Options(
+        responseType: ResponseType.bytes,
+        followRedirects: true,
+        validateStatus: (status) => status != null && status < 500,
+      ),
     );
-    print("==> PDF téléchargé pour reçu $recuId");
+    print("==> PDF téléchargé, taille : ${(response.data as List).length} bytes");
     return List<int>.from(response.data);
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+// Récupère l'URL du PDF via POST /telecharger/
+Future<String?> getUrlRecuPdf(int recuId) async {
+  try {
+    final response = await _dio.post('/api/paiements/recus/$recuId/telecharger/');
+    print("==> URL PDF reçu : ${response.data}");
+    final data = response.data;
+    if (data is Map) {
+      return data['url']?.toString() ??
+             data['pdf_url']?.toString() ??
+             data['file']?.toString() ??
+             data['link']?.toString();
+    }
+    return null;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+// Télécharge depuis une URL complète
+Future<List<int>> downloadPdfFromUrl(String url) async {
+  try {
+    final fullUrl = url.startsWith('http') ? url : 'http://10.122.254.129:8000$url';
+    print("==> Téléchargement PDF depuis : $fullUrl");
+    final response = await _dio.get(
+      fullUrl,
+      options: Options(
+        responseType: ResponseType.bytes,
+        followRedirects: true,
+        validateStatus: (status) => status != null && status < 500,
+      ),
+    );
+    final bytes = List<int>.from(response.data);
+    print("==> PDF téléchargé : ${bytes.length} bytes");
+    return bytes;
   } on DioException catch (e) {
     if (e.response != null) throw Exception(e.response?.data);
     throw Exception('Failed: $e');
