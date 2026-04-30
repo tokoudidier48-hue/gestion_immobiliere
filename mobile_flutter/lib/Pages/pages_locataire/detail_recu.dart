@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/service/locataire/api_locataire.dart';
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 

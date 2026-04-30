@@ -11,7 +11,7 @@ class ApiProprietaire {
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
       //baseUrl: 'http://10.190.5.129:8000', // URL de ton API
-      baseUrl: 'http://10.199.70.129:8000', // URL de ton API
+      baseUrl: 'http://10.92.225.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
@@ -410,12 +410,31 @@ Future<void> supprimerLocataire(int locataireId) async {
   }
 }
 
+/*
 Future<List<dynamic>> getPaiementsLocataire(int locataireId) async {
   try {
-    final response = await _dio.get('/api/locataires/$locataireId/paiements/');
+    final response = await _dio.get('/api/paiements/paiements/');
     print("==> Paiements locataire $locataireId : ${response.data}");
     return response.data as List;
   } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}*/
+
+Future<List<dynamic>> getPaiementsLocataire() async {
+  try {
+    print("==> Récupération des paiements du locataire connecté");
+
+    final response = await _dio.get('/api/paiements/paiements/');
+
+    print("==> Paiements : ${response.data}");
+
+    return response.data as List;
+  } on DioException catch (e) {
+    print("==> Erreur paiements : ${e.response?.data}");
     if (e.response != null) throw Exception(e.response?.data);
     throw Exception('Failed: $e');
   } catch (e) {

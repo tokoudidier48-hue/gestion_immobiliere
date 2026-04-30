@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/Pages/pages_auth/inscription.dart';
 import 'package:mobile_flutter/widgets/widget_auth/customField.dart';
+import 'package:mobile_flutter/Pages/pages_auth/choix_role_page.dart';
+import 'package:mobile_flutter/widgets/session_wrapper.dart';
 // tekebariba@gmail.com, Password : Sonon48@
 class Connexion extends StatefulWidget {
   const Connexion({super.key});
@@ -27,6 +29,48 @@ class _ConnexionState extends State<Connexion> {
     passwordController.dispose();
     super.dispose();
   }
+
+      Future<void> _loginGoogle(BuildContext context) async {
+      final auth = context.read<UtilisateurProvider>();
+      auth.clearError();
+
+      final result = await auth.loginAvecGoogle();
+
+      if (!context.mounted) return;
+
+      switch (result) {
+        case GoogleLoginResult.locataire:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SessionWrapper(child: AccueilLocatairePage()),
+            ),
+          );
+          break;
+        case GoogleLoginResult.proprietaire:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SessionWrapper(child: const HomePageProprietaire()),
+            ),
+          );
+          break;
+        case GoogleLoginResult.choixRole:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ChoixRolePage()),
+          );
+          break;
+        case GoogleLoginResult.error:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.error ?? 'Erreur connexion Google'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          break;
+      }
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -197,10 +241,25 @@ class _ConnexionState extends State<Connexion> {
 
               // Social buttons
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  socialButton(Image(image: AssetImage('assets/images/logo_google.png'), width: 20), Colors.blue),
-                  socialButton(Icon(Icons.facebook,color:  Colors.blue,), Colors.blue),
+                  Consumer<UtilisateurProvider>(
+                      builder: (context, auth, child) {
+                        return GestureDetector(
+                          onTap: auth.isLoading ? null : () => _loginGoogle(context),
+                          child: Container(
+                            width: 80, height: 50,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade300),
+                              color: Colors.white,
+                            ),
+                            child: Image.asset('assets/images/logo_google.png', width: 20),
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ), 
 

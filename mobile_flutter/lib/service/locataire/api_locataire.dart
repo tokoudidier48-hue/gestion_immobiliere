@@ -7,7 +7,7 @@ class ApiLocataire {
   ApiLocataire() : _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://10.190.5.129:8000',
-      baseUrl: 'http://10.199.70.129:8000', // URL de ton API
+      baseUrl: 'http://10.92.225.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {'Content-Type': 'application/json'},
@@ -659,4 +659,55 @@ Future<Response> modifierMessage(int messageId, String nouveauContenu) async {
       throw Exception('Failed: $e');
     }
   }
+
+
+
+  // ── IA LOYA ─────────────────────────────────────────────────────────────
+
+Future<Map<String, dynamic>> getMaConversationIA() async {
+  try {
+    final response = await _dio.get(
+      '/api/agent-ia/conversations/ma_conversation/',
+    );
+    print("==> Conversation IA : ${response.data}");
+    return response.data;
+  } on DioException catch (e) {
+    throw Exception(e.response?.data ?? 'Erreur conversation IA');
+  }
+}
+
+Future<Map<String, dynamic>> envoyerMessageIA({
+  required int conversationId,
+  required String contenu,
+  String typeMessage = 'texte',
+}) async {
+  try {
+    final response = await _dio.post(
+      '/api/agent-ia/conversations/$conversationId/envoyer_message/',
+      data: {
+        'contenu': contenu,
+        'type_message': typeMessage,
+      },
+    );
+
+    print("==> Réponse IA : ${response.data}");
+    return response.data;
+  } on DioException catch (e) {
+    throw Exception(e.response?.data ?? 'Erreur envoi IA');
+  }
+}
+
+Future<List<dynamic>> getMessagesIA(int conversationId) async {
+  try {
+    final response = await _dio.get(
+      '/api/agent-ia/messages/',
+      queryParameters: {'conversation': conversationId},
+    );
+    return response.data as List;
+  } on DioException catch (e) {
+    throw Exception(e.response?.data ?? 'Erreur messages IA');
+  }
+}
+
+
 }

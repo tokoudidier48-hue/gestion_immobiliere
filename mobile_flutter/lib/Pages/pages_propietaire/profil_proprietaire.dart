@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
-import 'package:mobile_flutter/Pages/pages_propietaire/a_propos.dart';
+import 'package:mobile_flutter/Pages/a_propos.dart';
 import 'package:mobile_flutter/Pages/pages_propietaire/evolution_financiere.dart';
 import 'package:mobile_flutter/Pages/pages_propietaire/modifier_profil.dart';
 import 'package:mobile_flutter/Pages/pages_propietaire/proprio_notification.dart';

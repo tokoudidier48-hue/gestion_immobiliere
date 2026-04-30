@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/chatPageDirect.dart';
 import 'package:mobile_flutter/service/proprietaire/apiProprietaire.dart';
 
 class DetailLocatairePage extends StatefulWidget {
@@ -21,14 +22,44 @@ class _DetailLocatairePageState extends State<DetailLocatairePage> {
     _fetchPaiements();
   }
 
-  Future<void> _fetchPaiements() async {
+  /*Future<void> _fetchPaiements() async {
     try {
-      final id = widget.locataire['id'];
-      final response = await _api.getPaiementsLocataire(id);
+      final response = await _api.getPaiementsLocataire();
+      print("==> Paiements : $response");
+      
       if (mounted) setState(() => _paiements = response);
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) setState(() => _paiements = []);
+      print("==> Erreur lors de la récupération des paiements : $e");
+    }
     if (mounted) setState(() => _loadingPaiements = false);
+  }*/
+
+Future<void> _fetchPaiements() async {
+  try {
+    print("==> Fetching paiements for locataire ID: ${widget.locataire['utilisateur']}");
+
+    final response = await _api.getPaiementsLocataire();
+
+    final locataireId = widget.locataire['utilisateur'];
+    print("LOCATAIRE DATA => ${widget.locataire}");
+    final filtered = response.where((p) {
+      return p['locataire'] == locataireId;
+    }).toList();
+
+    print("==> Paiements filtrés : $filtered");
+
+    if (mounted) {
+      setState(() => _paiements = filtered);
+    }
+  } catch (e) {
+    print("==> Erreur paiements : $e");
   }
+
+  if (mounted) {
+    setState(() => _loadingPaiements = false);
+  }
+}
 
   String _getNom() {
     final prenom = (widget.locataire['prenom'] ?? '').toString();
@@ -43,7 +74,7 @@ class _DetailLocatairePageState extends State<DetailLocatairePage> {
     final email = (l['email'] ?? '').toString();
     final telephone = (l['telephone'] ?? '—').toString();
     final uniteNom = (l['unite_nom'] ?? '—').toString();
-    final loyer = (l['loyer'] ?? '0').toString();
+    final loyer = (l['unite_loyer'] ?? '0').toString();
     final photoProfil = l['photo_profil']?.toString();
     final initiales = nomComplet.split(' ')
         .take(2)
@@ -106,7 +137,19 @@ class _DetailLocatairePageState extends State<DetailLocatairePage> {
                           icon: Icons.message_outlined,
                           label: 'Message',
                           color: _primary,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChatPageDirect(
+                                    autreUserId: widget.locataire['id'], // ✅ BON PARAMÈTRE
+                                    nom: widget.locataire['nom'] ?? '',
+                                    initiales: (widget.locataire['prenom'] ?? '')[0].toUpperCase(),
+                                    uniteId: widget.locataire['unite'],
+                                  ),
+                                ),
+                              );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -343,7 +386,7 @@ class _DetailLocatairePageState extends State<DetailLocatairePage> {
     final type = (p['type_paiement'] ?? '').toString();
     final statut = (p['statut'] ?? '').toString();
     final date = _formatDate(p['date_paiement'] ?? '');
-    final isReussi = statut == 'reussi';
+    final isReussi = statut == 'reussi' || statut == 'validé';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),

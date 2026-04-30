@@ -13,7 +13,7 @@ class ApiService {
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
       //baseUrl: 'http://10.190.5.129:8000', // URL de ton API
-      baseUrl: 'http://10.199.70.129:8000', // URL de ton API
+      baseUrl: 'http://10.92.225.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
@@ -259,6 +259,89 @@ Future<void> envoyerTokenFCM(String token) async {
   } catch (e) {
     print("==> Erreur : $e");
     rethrow;
+  }
+}
+  
+
+  Future<Map<String, dynamic>> loginWithGoogle() async {
+  try {
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      scopes: const ['email', 'profile'],
+      serverClientId: '351694266943-2l1mko2kq83v0i20ablg5qpffuee6195.apps.googleusercontent.com',
+    );
+
+    await googleSignIn.signOut();
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    if (googleUser == null) throw Exception("Connexion annulée");
+
+    final googleAuth = await googleUser.authentication;
+    final accessToken = googleAuth.accessToken;
+    if (accessToken == null) throw Exception("Token Google introuvable");
+
+    print("==> Access Token Google : $accessToken");
+
+    final response = await _dio.post(
+      '/api/comptes/social-login/',
+      data: {'provider': 'google', 'access_token': accessToken},
+      options: Options(
+        // ← accepte aussi les réponses non-200 pour les gérer manuellement
+        validateStatus: (status) => status != null && status < 500,
+      ),
+    );
+
+    print("==> Réponse social-login : ${response.data}");
+
+    // Vérifie si c'est une erreur HTML (IntegrityError)
+    if (response.data is String && (response.data as String).contains('IntegrityError')) {
+      throw Exception(
+          "Cet email est déjà utilisé avec un autre compte. Connectez-vous avec votre email et mot de passe.");
+    }
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final msg = response.data is Map
+          ? response.data['error'] ?? response.data['message'] ?? 'Erreur inconnue'
+          : 'Erreur serveur';
+      throw Exception(msg);
+    }
+
+    final accessJwt = response.data['access'] ?? response.data['token'] ?? '';
+    final userId = response.data['user']?['id']?.toString() ?? '';
+    final role = response.data['user']?['role'] ?? 'non_defini';
+
+    if (accessJwt.isNotEmpty) {
+      await LocalStorage.saveToken(accessJwt);
+      await LocalStorage.saveUserId(userId);
+      await LocalStorage.saveRole(role);
+    }
+
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    print("==> Erreur social-login : ${e.response?.data}");
+    final data = e.response?.data;
+    if (data is String && data.contains('IntegrityError')) {
+      throw Exception("Cet email est déjà utilisé. Connectez-vous avec email/mot de passe.");
+    }
+    if (data is Map) throw Exception(data['error'] ?? data['message'] ?? 'Erreur connexion Google');
+    throw Exception('Connexion Google échouée');
+  } catch (e) {
+    print("==> Erreur Google : $e");
+    throw Exception(e.toString().replaceAll('Exception: ', ''));
+  }
+}
+
+Future<void> mettreAJourRole(String role) async {
+  try {
+    await _dio.patch(
+      '/api/comptes/profil/',
+      data: {'role': role},
+    );
+    await LocalStorage.saveRole(role);
+    print("==> Rôle mis à jour : $role");
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
   }
 }
   

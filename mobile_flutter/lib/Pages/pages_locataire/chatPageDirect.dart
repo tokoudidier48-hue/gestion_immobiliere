@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
-import 'package:mobile_flutter/service/notification_service.dart';
 import 'package:provider/provider.dart';
 
 class ChatPageDirect extends StatefulWidget {

@@ -30,7 +30,7 @@ class _HistoriquePaiementsPageState extends State<HistoriquePaiementsPage> {
       if (!mounted) return;
       setState(() => _paiements = data);
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return; 
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);

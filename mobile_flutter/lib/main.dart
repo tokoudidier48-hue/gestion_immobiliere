@@ -3,6 +3,7 @@ import 'package:mobile_flutter/Pages/pages_locataire/mes_demandes.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/message_locataire.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/Pages/pages_propietaire/message.dart';
+import 'package:mobile_flutter/provider/assistant_ia_provider.dart';
 import 'package:mobile_flutter/widgets/session_wrapper.dart';
 import 'firebase_options.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => MessageProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ColocataireProvider()),
+        ChangeNotifierProvider(create: (_) => AssistantIAProvider()),
       ],
       child: const MyApp(),
     ),
@@ -165,7 +167,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return const Scaffold(
             body: Center(child: Text("Erreur de chargement")),
           );
-        }
+        } 
 
         switch (snapshot.data) {
           case StartState.onboarding:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/assistant_ia_page.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/detail_unite.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/notification_locataire.dart';
@@ -162,6 +163,21 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A3C6E)),
               ),
               const Spacer(),
+              // ← Bouton IA
+              IconButton(
+                icon: Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A3C6E).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_awesome, color: Color(0xFF1A3C6E), size: 18),
+                ),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AssistantIaPage()),
+                ),
+              ),
               GestureDetector(
                 onTap: () {
                   Navigator.push(

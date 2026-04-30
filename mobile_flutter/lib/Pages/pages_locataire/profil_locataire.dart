@@ -5,6 +5,7 @@ import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/modificationProfilLocatairePage.dart' hide kLocataireBlue;
 import 'package:mobile_flutter/Pages/pages_locataire/notification_locataire.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
+import 'package:mobile_flutter/Pages/a_propos.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/provider/provider_profil.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
@@ -176,6 +177,19 @@ class _ProfilLocatairePageState extends State<ProfilLocatairePage> {
                             context,
                             MaterialPageRoute(builder: (_) => const NotificationLocatairePage()),
                           );
+                        },
+                      ),
+                      _buildDivider(),
+                      _buildMenuItem(
+                        icon: Icons.info_outline,
+                        iconColor: const Color(0xFF1565C0),
+                        title: 'À propos de LoyaSmart',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AProposPage()),
+                          );
+
                         },
                       ),
                     ],
