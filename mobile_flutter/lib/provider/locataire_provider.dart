@@ -314,7 +314,7 @@ class NotificationProvider extends ChangeNotifier {
   List<dynamic> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  int get nonLues => _nonLues;
+  int get nonLues => _nonLues; // ← expose le compteur
 
   Future<void> fetchNotifications() async {
     _isLoading = true;
@@ -322,7 +322,9 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _notifications = await _api.getNotifications();
-      print("==> Notifications dans provider : ${_notifications.length}");
+      // ← Calcule le nombre de non lues localement
+      _nonLues = _notifications.where((n) => n['est_lue'] != true).length;
+      print("==> Notifications : ${_notifications.length}, Non lues : $_nonLues");
     } catch (e) {
       _error = e.toString();
       print("==> Erreur fetchNotifications : $e");
@@ -350,13 +352,19 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> marquerToutesLues() async {
     try {
       await _api.marquerToutesLues();
+      // ← Met à jour localement sans refetch
       for (var n in _notifications) {
         n['est_lue'] = true;
       }
       _nonLues = 0;
       notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      print("==> Erreur marquerToutesLues : $e");
+      // ← Si l'API échoue, force quand même la mise à jour locale
+      for (var n in _notifications) {
+        n['est_lue'] = true;
+      }
+      _nonLues = 0;
       notifyListeners();
     }
   }

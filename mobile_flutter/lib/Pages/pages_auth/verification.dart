@@ -63,7 +63,7 @@ class _VerificationOtpPageState extends State<VerificationOtpPage> {
     try {
       await widget.api.verifierOtp(widget.email, _code);
       if (!mounted) return;
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => NouveauMotDePassePage(api: widget.api),
@@ -116,10 +116,6 @@ class _VerificationOtpPageState extends State<VerificationOtpPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
                   const SizedBox(width: 10),
                   const Text('Vérification',
                       style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),

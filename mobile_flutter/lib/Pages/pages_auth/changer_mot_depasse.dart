@@ -102,6 +102,7 @@ class _NouveauMotDePassePageState extends State<NouveauMotDePassePage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const BackButton(color: Colors.black),

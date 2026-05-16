@@ -6,7 +6,7 @@ import 'package:mobile_flutter/Pages/pages_propietaire/message.dart';
 import 'package:mobile_flutter/provider/assistant_ia_provider.dart';
 import 'package:mobile_flutter/widgets/session_wrapper.dart';
 import 'firebase_options.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; 
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:app_links/app_links.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';

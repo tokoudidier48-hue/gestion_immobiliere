@@ -34,21 +34,25 @@ class UtilisateurProvider with ChangeNotifier {
       _role =  newRole;
   notifyListeners();
 }
-  Future<bool> inscription(Utilisateur user) async {
+
+
+    Future<bool> inscription(Utilisateur user) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
       final response = await _apiService.inscription(user);
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         _token = response.data['token'] ?? response.data['access'];
         _user = Utilisateur.fromJson(response.data['user'] ?? response.data);
         return true;
       }
-      throw Exception('Inscription échouée');
+      _error = 'Inscription échouée. Réessayez.';
+      return false;
     } on Exception catch (e) {
-      _error = e.toString();
-      debugPrint('Registration error: $e');
+      // ← Récupère le message propre depuis l'exception
+      _error = e.toString().replaceAll('Exception: ', '');
+      debugPrint('Registration error: $_error');
       return false;
     } finally {
       _isLoading = false;

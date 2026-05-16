@@ -1,15 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
-const String kBaseUrl = 'http://10.199.70.129:8000';
+const String kBaseUrl = 'http://10.190.5.129:8000';
 class ApiLocataire {
   final Dio _dio;
 
   ApiLocataire() : _dio = Dio(
     BaseOptions(
-      //baseUrl: 'http://10.190.5.129:8000',
-      baseUrl: 'http://10.92.225.129:8000', // URL de ton API
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      baseUrl: 'http://10.190.5.129:8000',
+      //baseUrl: 'http://10.92.225.129:8000', // URL de ton API
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 120),
       headers: {'Content-Type': 'application/json'},
     ),
   ) {
@@ -482,16 +482,21 @@ Future<Response> modifierMessage(int messageId, String nouveauContenu) async {
   }
 
   Future<Response> marquerToutesLues() async {
-    try {
-      final response = await _dio.post('/api/notifications/notifications/marquer_tout_lu/');
-      return response;
-    } on DioException catch (e) {
-      if (e.response != null) throw Exception(e.response?.data);
-      throw Exception('Failed to mark all notifications: $e');
-    } catch (e) {
-      throw Exception('Failed to mark all notifications: $e');
-    }
+  try {
+    // ← Certains backends attendent un body vide ou un GET
+    final response = await _dio.post(
+      '/api/notifications/notifications/marquer_tout_lu/',
+      data: {}, // ← body vide explicite
+    );
+    return response;
+  } on DioException catch (e) {
+    print("==> Erreur marquerToutesLues : ${e.response?.statusCode} ${e.response?.data}");
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed to mark all notifications: $e');
+  } catch (e) {
+    throw Exception('Failed to mark all notifications: $e');
   }
+}
 
   Future<int> getNotifsNonLues() async {
     try {

@@ -12,8 +12,8 @@ class ApiService {
   ApiService() : _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
-      //baseUrl: 'http://10.190.5.129:8000', // URL de ton API
-      baseUrl: 'http://10.92.225.129:8000', // URL de ton API
+      baseUrl: 'http://10.190.5.129:8000', // URL de ton API
+      //baseUrl: 'http://10.92.225.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
@@ -21,7 +21,7 @@ class ApiService {
       },
     ),
   ) {
-    _dio.interceptors.add(
+    /*_dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (
           RequestOptions options,
@@ -38,7 +38,39 @@ class ApiService {
           return handler.next(options);
         },
       ),
-    );
+    );*/
+
+    _dio.interceptors.add(
+  InterceptorsWrapper(
+    onRequest: (options, handler) async {
+
+      print("==> Intercepteur déclenché !");
+
+      final token = await LocalStorage.getToken();
+      print("==> Token récupéré : $token");
+
+      // routes publiques
+      final publicRoutes = [
+        '/api/comptes/inscription/',
+        '/api/comptes/connexion/',
+        '/api/comptes/social-login/',
+        '/api/comptes/mot-de-passe-oublie/',
+        '/api/comptes/verifier-code/',
+        '/api/comptes/nouveau-mot-de-passe/',
+      ];
+
+      bool isPublicRoute = publicRoutes.any(
+        (route) => options.path.contains(route),
+      );
+
+      if (!isPublicRoute && token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+
+      handler.next(options);
+    },
+  ),
+);
   }
   // Interceptor pour ajouter token
   void setToken(String token) {
@@ -49,31 +81,103 @@ class ApiService {
     _dio.options.headers.remove('Authorization');
   }
 
+ String _parseInscriptionError(dynamic data) {
+  if (data == null) return 'Erreur lors de l\'inscription.';
+
+  // Django retourne les erreurs par champ : {"email": ["already exists"], "telephone": [...]}
+  if (data is Map) {
+    final messages = <String>[];
+
+    data.forEach((key, value) {
+      final fieldErrors = value is List ? value : [value];
+      for (final err in fieldErrors) {
+        final errStr = err.toString().toLowerCase();
+
+        if (key == 'email') {
+          if (errStr.contains('already') || errStr.contains('exist') || errStr.contains('unique')) {
+            messages.add('Cet email est déjà utilisé.');
+          } else if (errStr.contains('valid') || errStr.contains('invalid')) {
+            messages.add('Email invalide.');
+          } else {
+            messages.add('Email : $err');
+          }
+        } else if (key == 'telephone' || key == 'phone') {
+          if (errStr.contains('already') || errStr.contains('exist') || errStr.contains('unique')) {
+            messages.add('Ce numéro de téléphone est déjà utilisé.');
+          } else if (errStr.contains('valid') || errStr.contains('invalid')) {
+            messages.add('Numéro de téléphone invalide.');
+          } else {
+            messages.add('Téléphone : $err');
+          }
+        } else if (key == 'password' || key == 'mot_de_passe') {
+          if (errStr.contains('common')) {
+            messages.add('Mot de passe trop simple. Choisissez-en un plus sécurisé.');
+          } else if (errStr.contains('short') || errStr.contains('least')) {
+            messages.add('Mot de passe trop court.');
+          } else if (errStr.contains('match')) {
+            messages.add('Les mots de passe ne correspondent pas.');
+          } else {
+            messages.add('Mot de passe : $err');
+          }
+        } else if (key == 'non_field_errors' || key == 'detail' || key == 'message') {
+          messages.add(err.toString());
+        } else {
+          messages.add(err.toString());
+        }
+      }
+    });
+
+    if (messages.isNotEmpty) return messages.join('\n');
+  }
+
+  // Si c'est une string directe
+  if (data is String) {
+    final d = data.toLowerCase();
+    if (d.contains('already') || d.contains('exist')) {
+      return 'Un compte existe déjà avec ces informations.';
+    }
+    return data;
+  }
+
+  return 'Erreur lors de l\'inscription.';
+}
+
   // Méthode pour l'inscription
   Future<Response> inscription(Utilisateur user) async {
-    print("==> Début de l'inscription");
-    print("Données envoyées : ${user.toJson()}");
+  print("==> Début de l'inscription");
+  print("Données envoyées : ${user.toJson()}");
 
-    try {
-      final response = await _dio.post(
-        '/api/comptes/inscription/',
-        data: user.toJson(),
-      );
-      print("Réponse reçue : ${response.statusCode}");
-      print("Données réponse : ${response.data}");
-      return response;
-    } on DioException catch (e) {
-      print("Erreur DioException : ${e.message}");
-      if (e.response != null) {
-        print("Détails réponse : ${e.response?.data}");
-        throw Exception(e.response?.data['message'] ?? 'Erreur inscription');
-      }
-      throw Exception('Failed to register: $e');
-    } catch (e) {
-      print("Erreur inconnue : $e");
-      throw Exception('Failed to register: $e');
+  try {
+    final response = await _dio.post(
+      '/api/comptes/inscription/',
+      data: user.toJson(),
+    );
+    print("Réponse reçue : ${response.statusCode}");
+    print("Données réponse : ${response.data}");
+    return response;
+  } on DioException catch (e) {
+    print("Erreur DioException : ${e.message}");
+    if (e.response != null) {
+      print("Détails réponse : ${e.response?.data}");
+      final data = e.response?.data;
+      throw Exception(_parseInscriptionError(data));
     }
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      throw Exception('La connexion a expiré. Vérifiez votre internet.');
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      throw Exception('Impossible de se connecter. Vérifiez votre connexion internet.');
+    }
+    throw Exception('Erreur réseau : ${e.message}');
+  } catch (e) {
+    print("Erreur inconnue : $e");
+    rethrow;
   }
+}
+
+
 
   // Méthode pour la connexion
   Future<Response> login(String email, String password) async {
@@ -82,6 +186,7 @@ class ApiService {
 
     try {
       await LocalStorage.clearToken();
+      clearToken();
       final response = await _dio.post(
         '/api/comptes/connexion/',
         data: {'email': email, 'password': password},

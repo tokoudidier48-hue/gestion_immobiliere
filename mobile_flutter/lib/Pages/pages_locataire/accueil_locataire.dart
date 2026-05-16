@@ -47,6 +47,7 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
     super.initState();
     Future.microtask(() {
       context.read<UniteDProvider>().fetchUnitesDisponibles();
+       context.read<NotificationProvider>().fetchNotifications();
     });
   }
 
@@ -151,76 +152,107 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Text(
-                'LoyaSmart',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A3C6E)),
-              ),
-              const Spacer(),
-              // ← Bouton IA
-              IconButton(
-                icon: Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A3C6E).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.auto_awesome, color: Color(0xFF1A3C6E), size: 18),
+  return Container(
+    color: Colors.white,
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            const Text(
+              'LoyaSmart',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A3C6E)),
+            ),
+            const Spacer(),
+
+            // Bouton IA
+            IconButton(
+              icon: Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A3C6E).withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AssistantIaPage()),
-                ),
+                child: const Icon(Icons.auto_awesome, color: Color(0xFF1A3C6E), size: 18),
               ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotificationLocatairePage()),
-                  );
-                },
-                child: Stack(
-                  children: [
-                    const Icon(Icons.notifications_outlined, size: 26),
-                    Positioned(
-                      right: 0, top: 0,
-                      child: Container(
-                        width: 8, height: 8,
-                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AssistantIaPage()),
+              ),
+            ),
+
+            // Bouton notification avec badge
+            Consumer<NotificationProvider>(
+              builder: (context, notifProvider, child) {
+                final count = notifProvider.nonLues;
+                return GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NotificationLocatairePage()),
+                    );
+                    // Rafraîchit le compteur au retour
+                    if (mounted) {
+                      context.read<NotificationProvider>().fetchNotifications();
+                    }
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.notifications_outlined, size: 26, color: Colors.black87),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F2F5),
-              borderRadius: BorderRadius.circular(10),
+                      if (count > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            child: Text(
+                              count > 99 ? '99+' : count.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
-            child: TextField(
-              onChanged: (v) => setState(() => _searchQuery = v),
-              decoration: const InputDecoration(
-                hintText: 'Cotonou, Fidjrossè, Calavi...',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
-                icon: Icon(Icons.search, color: Colors.grey),
-                border: InputBorder.none,
-              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F2F5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: TextField(
+            onChanged: (v) => setState(() => _searchQuery = v),
+            decoration: const InputDecoration(
+              hintText: 'Cotonou, Fidjrossè, Calavi...',
+              hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+              icon: Icon(Icons.search, color: Colors.grey),
+              border: InputBorder.none,
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildFilterTabs() {
     return SingleChildScrollView(

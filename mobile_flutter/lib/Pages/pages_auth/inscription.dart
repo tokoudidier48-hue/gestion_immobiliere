@@ -67,6 +67,22 @@ class _InscriptionState extends State<Inscription> {
   }
 }
 
+// Ajoute dans _InscriptionState
+
+String _parseError(String rawError) {
+  final e = rawError.toLowerCase();
+  if (e.contains('socketexception') || e.contains('connection refused') ||
+      e.contains('errno = 111') || e.contains('network')) {
+    return 'Impossible de se connecter. Vérifiez votre connexion internet.';
+  }
+  if (e.contains('timeout')) return 'La connexion a expiré. Réessayez.';
+  if (e.contains('email') && e.contains('exist')) return 'Cet email est déjà utilisé.';
+  if (e.contains('email') && e.contains('already')) return 'Un compte existe déjà avec cet email.';
+  if (e.contains('password') && e.contains('match')) return 'Les mots de passe ne correspondent pas.';
+  if (e.contains('telephone') || e.contains('phone')) return 'Numéro de téléphone invalide ou déjà utilisé.';
+  return rawError.replaceAll('Exception: ', '').replaceAll('{', '').replaceAll('}', '').trim();
+}
+
   @override
  @override
 Widget build(BuildContext context) {
@@ -189,21 +205,33 @@ Widget build(BuildContext context) {
                 Row(
                   children: [
                     Expanded(
-                      child: customField(
-                        keyboardType: 'text',
-                        controller: nameController,
-                        icon: Icons.person,
-                        hint: "Barack",
-                      ),
+                      child: // Nom
+                        customField(
+                          keyboardType: 'text',
+                          controller: nameController,
+                          icon: Icons.person,
+                          hint: 'Prénom',
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) return 'Prénom requis';
+                            if (value.trim().length < 2) return 'Prénom trop court';
+                            return null;
+                          },
+                        ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: customField(
-                        keyboardType: 'text',
-                        controller: lastnameController,
-                        icon: Icons.person,
-                        hint: "Obama",
-                      ),
+                      child: // Prénom
+                          customField(
+                            keyboardType: 'text',
+                            controller: lastnameController,
+                            icon: Icons.person,
+                            hint: 'Nom',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) return 'Nom requis';
+                              if (value.trim().length < 2) return 'Nom trop court';
+                              return null;
+                            },
+                          ),
                     ),
                   ],
                 ),
@@ -245,23 +273,37 @@ Widget build(BuildContext context) {
                 
                 const SizedBox(height: 15),
 
+                // Mot de passe
                 customField(
                   keyboardType: 'password',
                   controller: passwordController,
-                  hint: "••••••••",
+                  hint: '••••••••',
                   icon: Icons.lock,
                   isPassword: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Mot de passe requis';
+                    if (value.length < 8) return 'Au moins 8 caractères requis';
+                    if (!RegExp(r'[A-Z]').hasMatch(value)) return 'Au moins une majuscule requise';
+                    if (!RegExp(r'[0-9]').hasMatch(value)) return 'Au moins un chiffre requis';
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 15),
 
-                customField(
-                  keyboardType: 'password',
-                  controller: confirmPasswordController,
-                  hint: "••••••••",
-                  icon: Icons.lock,
-                  isPassword: true,
-                ),
+                // Confirmation
+                  customField(
+                    keyboardType: 'password',
+                    controller: confirmPasswordController,
+                    hint: '••••••••',
+                    icon: Icons.lock,
+                    isPassword: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Confirmation requise';
+                      if (value != passwordController.text) return 'Les mots de passe ne correspondent pas';
+                      return null;
+                    },
+                  ),
 
                 const SizedBox(height: 10),
 
@@ -280,30 +322,75 @@ Widget build(BuildContext context) {
                           ),
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
+                              // Vérifie les mots de passe avant d'appeler l'API
+                              if (passwordController.text != confirmPasswordController.text) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Row(
+                                      children: [
+                                        Icon(Icons.error_outline, color: Colors.white, size: 18),
+                                        SizedBox(width: 8),
+                                        Expanded(child: Text('Les mots de passe ne correspondent pas.')),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red.shade700,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    margin: const EdgeInsets.all(12),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (nameController.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Row(children: [
+                                      Icon(Icons.error_outline, color: Colors.white, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Veuillez entrer votre prénom.'),
+                                    ]),
+                                    backgroundColor: Colors.red.shade700,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    margin: const EdgeInsets.all(12),
+                                  ),
+                                );
+                                return;
+                              }
+
                               auth.clearError();
                               final user = Utilisateur(
                                 role: selectedRole,
                                 name: nameController.text.trim(),
-                                lastName:lastnameController.text.trim(),
+                                lastName: lastnameController.text.trim(),
                                 email: emailController.text.trim(),
-                                phoneNumber:phonenumberController.text.trim(),
+                                phoneNumber: phonenumberController.text.trim(),
                                 password: passwordController.text,
-                                confirmPassword:confirmPasswordController.text,
+                                confirmPassword: confirmPasswordController.text,
                               );
+
                               final success = await auth.inscription(user);
-                              if (success && context.mounted) {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>  EmailVerificationScreen(email: emailController.text.trim())),
-                                );
-                              } else if (auth.error != null &&
-                                  context.mounted) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
+                              if (!context.mounted) return;
+
+                              if (success) {
+                                Navigator.pushReplacement(context, MaterialPageRoute(
+                                    builder: (_) => EmailVerificationScreen(email: emailController.text.trim())));
+                              } else if (auth.error != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(auth.error!),
-                                    backgroundColor: Colors.red,
+                                    content: Row(
+                                      children: [
+                                        const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(child: Text(_parseError(auth.error!))),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.red.shade700,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    margin: const EdgeInsets.all(12),
+                                    duration: const Duration(seconds: 4),
                                   ),
                                 );
                               }
