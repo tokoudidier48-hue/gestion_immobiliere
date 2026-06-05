@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/chatPageDirect.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/modificationProfilLocatairePage.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/trouver_colocataire.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
@@ -425,361 +426,20 @@ Widget _buildRechercheCard(dynamic recherche, String currentUserId) {
   final telephone = recherche['telephone'] ?? '';
   final description = recherche['description'] ?? '';
   final estActive = recherche['est_active'] == true;
-
-  // L'utilisateur connecté est-il le lanceur de cette recherche ?
   final estLanceur = currentUserId.isNotEmpty && locataireId == currentUserId;
-    print("locataireId = $locataireId");
-    print("currentUserId = $currentUserId");
-    print("estLanceur = $estLanceur");
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: Colors.grey.shade200),
-      boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2)),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF0F4FF),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(14),
-              topRight: Radius.circular(14),
-            ),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFF1A3C6E).withOpacity(0.15),
-                child: Text(
-                  locataireNom.isNotEmpty ? locataireNom[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A3C6E),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(locataireNom,
-                        style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87,
-                        )),
-                    Text(
-                      estLanceur ? 'Votre annonce' : 'Cherche un colocataire',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: estLanceur ? const Color(0xFF1A3C6E) : Colors.grey,
-                        fontWeight: estLanceur ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: estActive
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  estActive ? 'ACTIVE' : 'INACTIVE',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: estActive ? Colors.green : Colors.grey,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Infos
-        Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _infoChip(Icons.school_outlined, 'Filière', filiere),
-              const SizedBox(height: 8),
-              _infoChip(Icons.location_on_outlined, 'Ville', ville),
-              if (religion.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _infoChip(Icons.favorite_outline, 'Religion', religion),
-              ],
-              const SizedBox(height: 8),
-              _infoChip(Icons.phone_outlined, 'Téléphone', telephone),
-              if (description.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(description,
-                    style: const TextStyle(
-                      fontSize: 13, color: Colors.black54, height: 1.5,
-                    )),
-              ],
-            ],
-          ),
-        ),
-
-        // Candidatures
-        FutureBuilder<List<dynamic>>(
-            future: context.read<ColocataireProvider>().getCandidaturesRecherche(rechercheId),
-            builder: (context, snapshot) {
-              final candidatures = snapshot.data ?? [];
-
-              // Vérifie si l'utilisateur connecté a déjà postulé
-              final dejaPostule = candidatures.any(
-                (c) => (c['candidat'] ?? c['candidat_id'] ?? '').toString() == currentUserId,
-              );
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (candidatures.isNotEmpty) ...[
-                    Divider(color: Colors.grey.shade100),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
-                      child: Text(
-                        '${candidatures.length} candidature(s)',
-                        style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    ...candidatures.map((c) => _buildCandidatureItem(
-                      c,
-                      estLanceur,
-                      currentUserId, // ← passe currentUserId
-                    )).toList(),
-                  ],
-
-                  // Bouton postuler — masqué si lanceur OU déjà postulé
-                  if (!estLanceur && !dejaPostule)
-                    Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => TrouverColocatairePage(
-                                  rechercheId: rechercheId,
-                                  estPostulant: true,
-                                ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.person_add_outlined,
-                              size: 16, color: Color(0xFF1A3C6E)),
-                          label: const Text('Je suis intéressé(e)',
-                              style: TextStyle(color: Color(0xFF1A3C6E), fontSize: 13)),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF1A3C6E)),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  // Message si déjà postulé
-                  if (!estLanceur && dejaPostule)
-                    Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.green.withOpacity(0.3)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
-                            SizedBox(width: 8),
-                            Text('Vous avez déjà postulé à cette annonce',
-                                style: TextStyle(fontSize: 13, color: Colors.green,
-                                    fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-      ],
-    ),
-  );
-}
-
-Widget _buildCandidatureItem(dynamic candidature, bool estLanceur, String currentUserId) {
-  final candidatureId = candidature['id'];
-  final candidatId = (candidature['candidat'] ?? candidature['candidat_id'] ?? '').toString();
-  final candidatNom = candidature['candidat_nom'] ?? 'Candidat';
-  final filiere = candidature['filiere'] ?? '';
-  final ville = candidature['ville'] ?? '';
-  final telephone = candidature['telephone'] ?? '';
-  final description = candidature['description'] ?? '';
-  final estAcceptee = candidature['est_acceptee'] == true;
-
-  // Est-ce que c'est la candidature de l'utilisateur connecté ?
-  final estMaCandidature = candidatId == currentUserId;
-
-  return Container(
-    margin: const EdgeInsets.fromLTRB(14, 4, 14, 4),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: estAcceptee
-          ? Colors.green.withOpacity(0.05)
-          : const Color(0xFFF9F9F9),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(
-        color: estAcceptee
-            ? Colors.green.withOpacity(0.3)
-            : Colors.grey.shade200,
-      ),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: estMaCandidature
-                  ? const Color(0xFF1A3C6E).withOpacity(0.1)
-                  : Colors.blue.withOpacity(0.1),
-              child: Text(
-                candidatNom.isNotEmpty ? candidatNom[0].toUpperCase() : '?',
-                style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.bold,
-                  color: estMaCandidature ? const Color(0xFF1A3C6E) : Colors.blue,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(candidatNom,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  if (estMaCandidature)
-                    const Text('Votre candidature',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF1A3C6E),
-                            fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-            if (estAcceptee)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text('ACCEPTÉ',
-                    style: TextStyle(fontSize: 10, color: Colors.green,
-                        fontWeight: FontWeight.w600)),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        _infoChip(Icons.school_outlined, 'Filière', filiere),
-        const SizedBox(height: 4),
-        _infoChip(Icons.location_on_outlined, 'Ville', ville),
-        const SizedBox(height: 4),
-        _infoChip(Icons.phone_outlined, 'Tél', telephone),
-        if (description.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(description,
-              style: const TextStyle(fontSize: 12, color: Colors.black54, height: 1.4)),
-        ],
-
-        // Boutons accepter/refuser — uniquement pour le lanceur, candidature non encore acceptée
-        if (estLanceur && !estAcceptee) ...[
-          const SizedBox(height: 12),
-          Consumer<ColocataireProvider>(
-            builder: (context, provider, child) {
-              return Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: provider.isLoading ? null : () async {
-                        final success =
-                            await provider.accepterCandidature(candidatureId);
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(success
-                              ? 'Candidature acceptée !'
-                              : 'Erreur : ${provider.error}'),
-                          backgroundColor: success ? Colors.green : Colors.red,
-                        ));
-                        if (success) setState(() {});
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Accepter',
-                          style: TextStyle(
-                            color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600,
-                          )),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: provider.isLoading ? null : () async {
-                        final success =
-                            await provider.refuserCandidature(candidatureId);
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(success
-                              ? 'Candidature refusée.'
-                              : 'Erreur : ${provider.error}'),
-                          backgroundColor: success ? Colors.orange : Colors.red,
-                        ));
-                        if (success) setState(() {});
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Refuser',
-                          style: TextStyle(
-                            color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600,
-                          )),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ],
-    ),
+  return _RechercheCardWidget(
+    rechercheId: rechercheId,
+    locataireNom: locataireNom,
+    filiere: filiere,
+    ville: ville,
+    religion: religion,
+    telephone: telephone,
+    description: description,
+    estActive: estActive,
+    estLanceur: estLanceur,
+    currentUserId: currentUserId,
+    unite: widget.unite,
   );
 }
 
@@ -840,48 +500,102 @@ Widget _infoChip(IconData icon, String label, String value) {
     );
   }
 
-  Widget _buildColocataireCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TrouverColocatairePage(
-              uniteId: widget.unite['id'],  // ← passe l'ID
-              estPostulant: false,
+Widget _buildColocataireCard(BuildContext context) {
+  return GestureDetector(
+    onTap: () async {
+      final infos = await LocalStorage.getInfosSupplementaires();
+      final filiere = infos['filiere'] ?? '';
+      final ville = infos['ville'] ?? '';
+      final telephone = infos['telephone'] ?? '';
+      final description = infos['description'] ?? '';
+
+      if (!context.mounted) return;
+
+      if (filiere.isEmpty || ville.isEmpty || telephone.isEmpty || description.isEmpty) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.person_outline, color: Color(0xFF1A3C6E)),
+                SizedBox(width: 8),
+                Text('Profil incomplet',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ],
             ),
+            content: Text(
+              'Complétez vos informations supplémentaires pour chercher un colocataire.',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => const ModificationProfilLocatairePage(),
+                  ));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A3C6E),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Compléter', style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0F4FF),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF1A3C6E).withOpacity(0.15)),
+        return;
+      }
+
+      // ← Correction : widget.unite['id'] au lieu de u['id']
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TrouverColocatairePage(
+            uniteId: widget.unite['id'],
+            estPostulant: false,
+            infosPreRemplies: infos,
+          ),
         ),
-        child: Row(
-          children: [
-            const Icon(Icons.people_outline, color: Color(0xFF1A3C6E), size: 28),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('CHERCHER UN COLOCATAIRE',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A3C6E))),
-                  SizedBox(height: 2),
-                  Text('Trouvez quelqu\'un pour partager ce logement',
-                      style: TextStyle(fontSize: 11, color: Colors.grey)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Color(0xFF1A3C6E)),
-          ],
-        ),
+      );
+    },
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F4FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1A3C6E).withOpacity(0.15)),
       ),
-    );
-  }
+      child: const Row(
+        children: [
+          Icon(Icons.people_outline, color: Color(0xFF1A3C6E), size: 28),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('TROUVER UN COLOCATAIRE',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Color(0xFF1A3C6E))),
+                SizedBox(height: 2),
+                Text('Trouvez quelqu\'un pour partager ce logement',
+                    style: TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: Color(0xFF1A3C6E)),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildContactCard(String contact) {
   // Récupère l'ID du propriétaire depuis les données de l'unité
@@ -1150,4 +864,553 @@ Widget _infoChip(IconData icon, String label, String value) {
     },
   );
 }
+
+}
+
+class _RechercheCardWidget extends StatefulWidget {
+  final int rechercheId;
+  final String locataireNom;
+  final String filiere;
+  final String ville;
+  final String religion;
+  final String telephone;
+  final String description;
+  final bool estActive;
+  final bool estLanceur;
+  final String currentUserId;
+  final Map<String, dynamic> unite;
+
+  const _RechercheCardWidget({
+    required this.rechercheId,
+    required this.locataireNom,
+    required this.filiere,
+    required this.ville,
+    required this.religion,
+    required this.telephone,
+    required this.description,
+    required this.estActive,
+    required this.estLanceur,
+    required this.currentUserId,
+    required this.unite,
+  });
+
+  @override
+  State<_RechercheCardWidget> createState() => _RechercheCardWidgetState();
+}
+
+class _RechercheCardWidgetState extends State<_RechercheCardWidget> {
+  List<dynamic> _candidatures = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCandidatures();
+  }
+
+  Future<void> _fetchCandidatures() async {
+    try {
+      final data = await context
+          .read<ColocataireProvider>()
+          .getCandidaturesRecherche(widget.rechercheId);
+      if (!mounted) return;
+      setState(() {
+        _candidatures = data;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dejaPostule = _candidatures.any(
+      (c) =>
+          (c['candidat'] ?? c['candidat_id'] ?? '').toString() ==
+          widget.currentUserId,
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF0F4FF),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(14)),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor:
+                      const Color(0xFF1A3C6E).withOpacity(0.15),
+                  child: Text(
+                    widget.locataireNom.isNotEmpty
+                        ? widget.locataireNom[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A3C6E)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.locataireNom,
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87)),
+                      Text(
+                        widget.estLanceur
+                            ? 'Votre annonce'
+                            : 'Cherche un colocataire',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: widget.estLanceur
+                              ? const Color(0xFF1A3C6E)
+                              : Colors.grey,
+                          fontWeight: widget.estLanceur
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: widget.estActive
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    widget.estActive ? 'ACTIVE' : 'INACTIVE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: widget.estActive ? Colors.green : Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Infos ────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoChip(Icons.school_outlined, 'Filière', widget.filiere),
+                const SizedBox(height: 8),
+                _infoChip(Icons.location_on_outlined, 'Ville', widget.ville),
+                if (widget.religion.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _infoChip(
+                      Icons.favorite_outline, 'Religion', widget.religion),
+                ],
+                const SizedBox(height: 8),
+                _infoChip(
+                    Icons.phone_outlined, 'Téléphone', widget.telephone),
+                if (widget.description.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(widget.description,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.black54,
+                          height: 1.5)),
+                ],
+              ],
+            ),
+          ),
+
+          // ── Candidatures ─────────────────────────────────────
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(14),
+              child: Center(
+                  child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))),
+            )
+          else ...[
+            if (_candidatures.isNotEmpty) ...[
+              Divider(color: Colors.grey.shade100),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                child: Text(
+                  '${_candidatures.length} candidature(s)',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey),
+                ),
+              ),
+              ..._candidatures
+                  .map((c) => _buildCandidatureItem(c))
+                  .toList(),
+            ],
+
+            // Bouton postuler
+            if (!widget.estLanceur && !dejaPostule)
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final infos =
+                          await LocalStorage.getInfosSupplementaires();
+                      final f = infos['filiere'] ?? '';
+                      final v = infos['ville'] ?? '';
+                      final t = infos['telephone'] ?? '';
+                      final d = infos['description'] ?? '';
+
+                      if (!context.mounted) return;
+
+                      if (f.isEmpty || v.isEmpty || t.isEmpty || d.isEmpty) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            title: const Row(
+                              children: [
+                                Icon(Icons.person_outline,
+                                    color: Color(0xFF1A3C6E)),
+                                SizedBox(width: 8),
+                                Text('Profil incomplet',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                            content: Text(
+                              'Complétez vos informations pour postuler.',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Annuler'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ModificationProfilLocatairePage()));
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1A3C6E),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(8)),
+                                ),
+                                child: const Text('Compléter',
+                                    style:
+                                        TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TrouverColocatairePage(
+                            rechercheId: widget.rechercheId,
+                            estPostulant: true,
+                            infosPreRemplies: infos,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.person_add_outlined,
+                        size: 16, color: Color(0xFF1A3C6E)),
+                    label: const Text('Je suis intéressé(e)',
+                        style: TextStyle(
+                            color: Color(0xFF1A3C6E), fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF1A3C6E)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+              ),
+
+            // Déjà postulé
+            if (!widget.estLanceur && dejaPostule)
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: Colors.green.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.check_circle_outline,
+                          color: Colors.green, size: 18),
+                      SizedBox(width: 8),
+                      Text('Vous avez déjà postulé à cette annonce',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCandidatureItem(dynamic candidature) {
+    final candidatureId = candidature['id'];
+    final candidatId =
+        (candidature['candidat'] ?? candidature['candidat_id'] ?? '')
+            .toString();
+    final candidatNom = candidature['candidat_nom'] ?? 'Candidat';
+    final filiere = candidature['filiere'] ?? '';
+    final ville = candidature['ville'] ?? '';
+    final telephone = candidature['telephone'] ?? '';
+    final description = candidature['description'] ?? '';
+    final estAcceptee = candidature['est_acceptee'] == true;
+    final estMaCandidature = candidatId == widget.currentUserId;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 4, 14, 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: estAcceptee
+            ? Colors.green.withOpacity(0.05)
+            : const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: estAcceptee
+              ? Colors.green.withOpacity(0.3)
+              : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: estMaCandidature
+                    ? const Color(0xFF1A3C6E).withOpacity(0.1)
+                    : Colors.blue.withOpacity(0.1),
+                child: Text(
+                  candidatNom.isNotEmpty
+                      ? candidatNom[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: estMaCandidature
+                        ? const Color(0xFF1A3C6E)
+                        : Colors.blue,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(candidatNom,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                    if (estMaCandidature)
+                      const Text('Votre candidature',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF1A3C6E),
+                              fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+              if (estAcceptee)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('ACCEPTÉ',
+                      style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _infoChip(Icons.school_outlined, 'Filière', filiere),
+          const SizedBox(height: 4),
+          _infoChip(Icons.location_on_outlined, 'Ville', ville),
+          const SizedBox(height: 4),
+          _infoChip(Icons.phone_outlined, 'Tél', telephone),
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(description,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                    height: 1.4)),
+          ],
+
+          // Boutons accepter/refuser uniquement pour le lanceur
+          if (widget.estLanceur && !estAcceptee) ...[
+            const SizedBox(height: 12),
+            Consumer<ColocataireProvider>(
+              builder: (context, provider, child) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: provider.isLoading
+                            ? null
+                            : () async {
+                                final success =
+                                    await provider.accepterCandidature(
+                                        candidatureId);
+                                if (!context.mounted) return;
+                                if (success) {
+                                  // Rafraîchit la liste complète
+                                  await _fetchCandidatures();
+                                } else {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                    content: Text(
+                                        'Erreur : ${provider.error}'),
+                                    backgroundColor: Colors.red,
+                                  ));
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Accepter',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: provider.isLoading
+                            ? null
+                            : () async {
+                                final success =
+                                    await provider.refuserCandidature(
+                                        candidatureId);
+                                if (!context.mounted) return;
+                                if (success) {
+                                  // ← Retire la candidature de la liste locale
+                                  setState(() {
+                                    _candidatures.removeWhere(
+                                        (c) => c['id'] == candidatureId);
+                                  });
+                                } else {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                    content: Text(
+                                        'Erreur : ${provider.error}'),
+                                    backgroundColor: Colors.red,
+                                  ));
+                                }
+                              },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Refuser',
+                            style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip(IconData icon, String label, String value) {
+    if (value.isEmpty) return const SizedBox();
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.grey),
+        const SizedBox(width: 6),
+        Text('$label : ',
+            style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Flexible(
+          child: Text(value,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87),
+              overflow: TextOverflow.ellipsis),
+        ),
+      ],
+    );
+  }
 }

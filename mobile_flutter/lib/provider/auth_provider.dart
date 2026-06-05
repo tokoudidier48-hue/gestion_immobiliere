@@ -3,6 +3,7 @@ import 'package:mobile_flutter/model/utilisateur.dart';
 import 'package:mobile_flutter/service/auth/api.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
 import 'package:mobile_flutter/service/session_service.dart';
+import 'package:mobile_flutter/service/websocket_service.dart';
 enum GoogleLoginResult { locataire, proprietaire, choixRole, error }
 
 class UtilisateurProvider with ChangeNotifier {
@@ -96,6 +97,7 @@ class UtilisateurProvider with ChangeNotifier {
     _user = null;
     _token = null;
     _error = null;
+    webSocketService.disconnect();
     SessionService.stop();
     await LocalStorage.saveToken('');
     await LocalStorage.setFirstLaunch(false);

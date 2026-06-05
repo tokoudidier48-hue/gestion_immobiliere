@@ -58,8 +58,8 @@ class SessionService {
 import 'dart:async';
 
 class SessionService {
-  static const Duration _inactivityTimeout = Duration(minutes: 3);
-  static const Duration _backgroundTimeout = Duration(minutes: 1);
+  static const Duration _inactivityTimeout = Duration(minutes: 45);
+  static const Duration _backgroundTimeout = Duration(minutes: 40);
 
   static Timer? _inactivityTimer;
   static DateTime? _backgroundStartTime;

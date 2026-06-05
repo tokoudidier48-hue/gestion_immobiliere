@@ -287,58 +287,76 @@ class _ChatPageState extends State<ChatPage> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   String _currentUserId = '';
+  bool _isSending = false;
+  bool _isLoadingMessages = false;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
       _currentUserId = await LocalStorage.getUserId() ?? '';
-      if (mounted) await context.read<MessageProvider>().fetchMessages(widget.conversationId);
-      _startConversationPolling();
-      _startMessagePolling();
+      if (!mounted) return;
+
+      // Indique quelle conversation est ouverte
+      context.read<MessageProvider>().setConversationOuverte(widget.conversationId);
+
+      await context.read<MessageProvider>().fetchMessages(widget.conversationId);
+      _scrollToBottom();
     });
   }
 
-  
-  void _startMessagePolling() {
-  Future.delayed(const Duration(seconds: 3), () async {
-    if (!mounted) return;
-    await context.read<MessageProvider>().fetchMessages(widget.conversationId);
-    _startMessagePolling();
-  });
-}
+  @override
+  void dispose() {
+    // Réinitialise la conversation ouverte
+    context.read<MessageProvider>().setConversationOuverte(null);
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-  void _startConversationPolling() {
-  Future.delayed(const Duration(seconds: 5), () async {
-    if (!mounted) return;
-    await context.read<MessageProvider>().fetchConversations();
-    _startConversationPolling();
-  });
-}
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   void _sendMessage() async {
-  final text = _messageController.text.trim();
-  if (text.isEmpty) return;
+    final text = _messageController.text.trim();
+    if (text.isEmpty || _isSending) return;
 
-  _messageController.clear();
+    _messageController.clear();
+    setState(() => _isSending = true);
 
-  await context.read<MessageProvider>()
-      .envoyerMessageDirect(widget.conversationId, text);
+    // Optimistic UI
+    context.read<MessageProvider>().ajouterMessageLocal({
+      'id': null,
+      'contenu': text,
+      'expediteur': int.tryParse(_currentUserId) ?? 0,
+      'date_envoi': DateTime.now().toIso8601String(),
+    });
+    _scrollToBottom();
 
-  // recharge les messages
-  await context.read<MessageProvider>()
-      .fetchMessages(widget.conversationId);
-
-  Future.delayed(const Duration(milliseconds: 100), () {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+    try {
+      await context.read<MessageProvider>()
+          .envoyerMessageDirect(widget.conversationId, text);
+      // Sync pour remplacer le message local (id null) par le vrai
+      if (!_isLoadingMessages) {
+        _isLoadingMessages = true;
+        await context.read<MessageProvider>().fetchMessages(widget.conversationId);
+        _isLoadingMessages = false;
+      }
+      _scrollToBottom();
+    } finally {
+      if (mounted) setState(() => _isSending = false);
     }
-  });
-}
+  }
+  // ... garde le reste (_showMessageOptions, _showModifierDialog, build, _buildMessage, _formatTime) identique
 
   void _showMessageOptions(int messageId, String contenuActuel) {
     showModalBottomSheet(

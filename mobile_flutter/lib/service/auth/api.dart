@@ -12,7 +12,7 @@ class ApiService {
   ApiService() : _dio = Dio(
     BaseOptions(
       //baseUrl: 'http://192.168.100.22:8000',
-      baseUrl: 'http://10.190.5.129:8000', // URL de ton API
+      baseUrl: 'http://10.187.67.129:8000', // URL de ton API
       //baseUrl: 'http://10.92.225.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
@@ -21,25 +21,6 @@ class ApiService {
       },
     ),
   ) {
-    /*_dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (
-          RequestOptions options,
-          RequestInterceptorHandler handler,
-        ) async {
-          print("==> Intercepteur déclenché !");
-          final token = await LocalStorage.getToken();
-          print("==> Token récupéré : $token");
-
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-
-          return handler.next(options);
-        },
-      ),
-    );*/
-
     _dio.interceptors.add(
   InterceptorsWrapper(
     onRequest: (options, handler) async {
@@ -206,14 +187,23 @@ class ApiService {
       return response;
     } on DioException catch (e) {
       print("Erreur DioException : ${e.message}");
+      // ← Gestion claire selon le type d'erreur
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('Impossible de joindre le serveur. Vérifiez votre connexion internet.');
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw Exception('Serveur inaccessible. Vérifiez votre connexion internet.');
+      }
       if (e.response != null) {
         print("Détails réponse : ${e.response?.data}");
         throw Exception('${e.response?.data}');
       }
-      throw Exception('Failed to login: $e');
+      throw Exception('Erreur réseau. Réessayez.');
     } catch (e) {
       print("Erreur inconnue : $e");
-      throw Exception('Failed to login: $e');
+      throw Exception('Une erreur inattendue s\'est produite.');
     }
   }
 
@@ -317,6 +307,14 @@ Future<Utilisateur> modifierProfil({
   required String lastName,
   required String telephone,
   File? photo,
+  // ← ajoute ces paramètres
+  String? filiere,
+  String? ville,
+  String? religion,
+  String? telephoneColoc,
+  String? description,
+  bool? fumeur,
+  bool? brutal,
 }) async {
   try {
     print("==> Modification du profil");
@@ -325,6 +323,14 @@ Future<Utilisateur> modifierProfil({
       'first_name': firstName,
       'last_name': lastName,
       'telephone': telephone,
+      // ← ajoute les champs colocation
+      if (filiere != null && filiere.isNotEmpty) 'filiere': filiere,
+      if (ville != null && ville.isNotEmpty) 'ville': ville,
+      if (religion != null && religion.isNotEmpty) 'religion': religion,
+      if (telephoneColoc != null && telephoneColoc.isNotEmpty) 'telephone_coloc': telephoneColoc,
+      if (description != null && description.isNotEmpty) 'description_coloc': description,
+      if (fumeur != null) 'fumeur': fumeur,
+      if (brutal != null) 'brutal': brutal,
       if (photo != null)
         'photo_profil': await MultipartFile.fromFile(
           photo.path,
@@ -339,10 +345,7 @@ Future<Utilisateur> modifierProfil({
     print("==> Réponse modification profil : ${response.data}");
     return Utilisateur.fromJson(response.data);
   } on DioException catch (e) {
-    if (e.response != null) {
-      print("Détails réponse : ${e.response?.data}");
-      throw Exception(e.response?.data);
-    }
+    if (e.response != null) throw Exception(e.response?.data);
     throw Exception('Failed to update profile: $e');
   } catch (e) {
     throw Exception('Failed to update profile: $e');
@@ -387,10 +390,16 @@ Future<void> envoyerTokenFCM(String token) async {
 
     final response = await _dio.post(
       '/api/comptes/social-login/',
-      data: {'provider': 'google', 'access_token': accessToken},
+      data: {'provider': 'google', 
+      'access_token': accessToken,
+      'id_token': googleAuth.idToken,
+      'token': accessToken
+      },
       options: Options(
         // ← accepte aussi les réponses non-200 pour les gérer manuellement
         validateStatus: (status) => status != null && status < 500,
+        sendTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 20),
       ),
     );
 
@@ -422,6 +431,8 @@ Future<void> envoyerTokenFCM(String token) async {
     return response.data as Map<String, dynamic>;
   } on DioException catch (e) {
     print("==> Erreur social-login : ${e.response?.data}");
+    print("==> Status code : ${e.response?.statusCode}");
+    print("==> Headers : ${e.response?.headers}");
     final data = e.response?.data;
     if (data is String && data.contains('IntegrityError')) {
       throw Exception("Cet email est déjà utilisé. Connectez-vous avec email/mot de passe.");

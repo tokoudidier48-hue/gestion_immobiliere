@@ -364,25 +364,26 @@ class _ConversationDetailPageState extends State<ConversationDetailPage> {
   String _currentUserId = '';
   bool _isSending = false;
 
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() async {
-      _currentUserId = await LocalStorage.getUserId() ?? '';
-      if (mounted) {
-        await context.read<MessageProvider>().fetchMessages(widget.conversationId);
-        _startPolling(); // ← démarre le polling
-      }
-    });
-  }
+  // Dans _ConversationDetailPageState, remplace initState par :
+@override
+void initState() {
+  super.initState();
+  Future.microtask(() async {
+    _currentUserId = await LocalStorage.getUserId() ?? '';
+    if (!mounted) return;
+    context.read<MessageProvider>().setConversationOuverte(widget.conversationId);
+    await context.read<MessageProvider>().fetchMessages(widget.conversationId);
+  });
+}
 
-  void _startPolling() {
-    Future.delayed(const Duration(seconds: 3), () async {
-      if (!mounted) return;
-      await context.read<MessageProvider>().fetchMessages(widget.conversationId);
-      _startPolling(); // ← rappelle lui-même toutes les 3 secondes
-    });
-  }
+@override
+void dispose() {
+  context.read<MessageProvider>().setConversationOuverte(null);
+  _msgController.dispose();
+  _scrollController.dispose();
+  super.dispose();
+}
+
 
   void _sendMessage() async {
     final text = _msgController.text.trim();
@@ -490,13 +491,6 @@ void _showModifierDialog(int messageId, String contenuActuel) {
     ),
   );
 }
-
-  @override
-  void dispose() {
-    _msgController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

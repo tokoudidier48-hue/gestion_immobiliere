@@ -10,6 +10,14 @@ class Utilisateur {
   String password;
   String confirmPassword;
   DateTime? derniereConnexion;
+  String? filiere;
+  String? ville;
+  String? religion;
+  String? telephoneColoc;
+  String? descriptionColoc;
+
+  bool fumeur;
+  bool brutal;
 
   Utilisateur({
     this.id,
@@ -22,6 +30,13 @@ class Utilisateur {
     required this.password,
     required this.confirmPassword,
     this.derniereConnexion,
+    this.filiere,
+    this.ville,
+    this.religion,
+    this.telephoneColoc,
+    this.descriptionColoc,
+    this.fumeur = false,
+    this.brutal = false,
   });
 
   // Convertir Json en model
@@ -39,6 +54,17 @@ class Utilisateur {
     derniereConnexion: json['derniere_connexion'] != null
         ? DateTime.parse(json['derniere_connexion'])
         : null,
+
+    filiere: json['filiere'],
+      ville: json['ville'],
+      religion: json['religion'],
+
+      telephoneColoc: json['telephone_coloc'],
+
+      descriptionColoc: json['description_coloc'],
+
+      fumeur: json['fumeur'] ?? false,
+      brutal: json['brutal'] ?? false,
   );
 }
 
@@ -53,6 +79,16 @@ class Utilisateur {
     'photo_profil': photoProfil,
     'password': password,
     'password2': confirmPassword,    // ✅ ajouter ceci
+    'filiere': filiere,
+    'ville': ville,
+    'religion': religion,
+
+    'telephone_coloc': telephoneColoc,
+
+    'description_coloc': descriptionColoc,
+
+    'fumeur': fumeur,
+    'brutal': brutal,
   };
 }
 }

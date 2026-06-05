@@ -6,12 +6,14 @@ class TrouverColocatairePage extends StatefulWidget {
   final int? uniteId;       // Si lanceur de recherche
   final int? rechercheId;   // Si postulant
   final bool estPostulant;  // true = postulant, false = lanceur
+  final Map<String, dynamic>? infosPreRemplies; // Pour pré-remplir les champs si besoin
 
   const TrouverColocatairePage({
     super.key,
     this.uniteId,
     this.rechercheId,
     this.estPostulant = false,
+    this.infosPreRemplies,
   });
 
   @override
@@ -25,6 +27,20 @@ class _TrouverColocatairePageState extends State<TrouverColocatairePage> {
   final _religionController = TextEditingController();
   final _telephoneController = TextEditingController();
   final _descriptionController = TextEditingController();
+
+  @override
+void initState() {
+  super.initState();
+  // Prérempli si infos disponibles
+  if (widget.infosPreRemplies != null) {
+    final infos = widget.infosPreRemplies!;
+    _filiereController.text = infos['filiere'] ?? '';
+    _villeController.text = infos['ville'] ?? '';
+    _religionController.text = infos['religion'] ?? '';
+    _telephoneController.text = infos['telephone'] ?? '';
+    _descriptionController.text = infos['description'] ?? '';
+  }
+}
 
   @override
   void dispose() {
@@ -82,28 +98,28 @@ class _TrouverColocatairePageState extends State<TrouverColocatairePage> {
               const SizedBox(height: 24),
 
               _buildField(
-                label: 'Filière / Profession',
+                label: 'Filière ',
                 controller: _filiereController,
-                hint: 'Ex: Informatique, Médecine...',
+                hint: 'Informatique, Médecine...',
               ),
               const SizedBox(height: 20),
               _buildField(
                 label: 'Ville',
                 controller: _villeController,
-                hint: 'Ex: Cotonou, Calavi...',
+                hint: 'Cotonou, Calavi...',
               ),
               const SizedBox(height: 20),
               _buildField(
                 label: 'Religion (Optionnel)',
                 controller: _religionController,
-                hint: 'Ex: Catholique, Musulman...',
+                hint: ' Catholique, Musulman...',
                 required: false,
               ),
               const SizedBox(height: 20),
               _buildField(
                 label: 'Numéro de téléphone',
                 controller: _telephoneController,
-                hint: '+229 00 00 00 00',
+                hint: ' 01 00 00 00 00',
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 20),
@@ -122,8 +138,8 @@ class _TrouverColocatairePageState extends State<TrouverColocatairePage> {
               Consumer<ColocataireProvider>(
                 builder: (context, provider, child) {
                   print("uniteId = ${widget.uniteId}");
-print("rechercheId = ${widget.rechercheId}");
-print("estPostulant = ${widget.estPostulant}");
+                  print("rechercheId = ${widget.rechercheId}");
+                  print("estPostulant = ${widget.estPostulant}");
                   return SizedBox(
                     width: double.infinity,
                     height: 52,

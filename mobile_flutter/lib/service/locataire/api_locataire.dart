@@ -6,7 +6,7 @@ class ApiLocataire {
 
   ApiLocataire() : _dio = Dio(
     BaseOptions(
-      baseUrl: 'http://10.190.5.129:8000',
+      baseUrl: 'http://10.187.67.129:8000',
       //baseUrl: 'http://10.92.225.129:8000', // URL de ton API
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 120),

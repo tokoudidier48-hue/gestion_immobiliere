@@ -182,36 +182,3 @@ class UniteProvider extends ChangeNotifier {
 }
 
 }
-
-/*class LocataireProvider extends ChangeNotifier {
-  final ApiProprietaire _api = ApiProprietaire();
-
-  List<Locataire> _locataires = [];
-  bool _isLoading = false;
-  String? _error;
-
-  List<Locataire> get locataires => _locataires;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-
-  Future<void> fetchLocatairesByUnite(int uniteId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final data = await _api.getLocatairesByUnite(uniteId);
-      _locataires = data.map((json) => Locataire(
-        nom: json['nom'] ?? '',
-        appart: json['nom_unite'] ?? '',
-        loyer: "${json['loyer']} CFA",
-        avatarColor: Colors.primaries[json['id'] % Colors.primaries.length],
-      )).toList();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-}*/

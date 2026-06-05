@@ -28,49 +28,93 @@ class _ChatPageDirectState extends State<ChatPageDirect> {
   int? _conversationId;
   bool _isLoading = true;
   bool _isSending = false;
+  bool _isLoadingMessages = false;
+  Set<int> _messageIds = {}; 
 
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() async {
-      _currentUserId = await LocalStorage.getUserId() ?? '';
-      try {
-        final convId = await context.read<MessageProvider>().getOuCreerConversation(
-          widget.autreUserId,
-          uniteId: widget.uniteId,
-        );
-        _conversationId = convId;
-        if (mounted) await context.read<MessageProvider>().fetchMessages(_conversationId!);
-      } catch (e) {
-        print("==> Erreur init ChatPageDirect : $e");
-      }
-      if (mounted) setState(() => _isLoading = false);
-      _startPolling();
-    });
-  }
+@override
+void initState() {
+  super.initState();
+  Future.microtask(() async {
+    _currentUserId = await LocalStorage.getUserId() ?? '';
+    try {
+      final convId = await context.read<MessageProvider>()
+          .getOuCreerConversation(widget.autreUserId, uniteId: widget.uniteId);
+      _conversationId = convId;
+      if (!mounted) return;
 
-  void _startPolling() {
-    Future.delayed(const Duration(seconds: 3), () async {
-      if (!mounted || _conversationId == null) return;
+      // ← Indique conversation ouverte pour WebSocket
+      context.read<MessageProvider>().setConversationOuverte(convId);
+
       await context.read<MessageProvider>().fetchMessages(_conversationId!);
-      _startPolling();
-    });
-  }
+      _scrollToBottom();
+    } catch (e) {
+      print("==> Erreur init ChatPageDirect : $e");
+    }
+    if (mounted) setState(() => _isLoading = false);
+  });
+}
+
+@override
+void dispose() {
+  context.read<MessageProvider>().setConversationOuverte(null);
+  _messageController.dispose();
+  _scrollController.dispose();
+  super.dispose();
+}
+
+
+void _scrollToBottom() {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  });
+}
 
   void _sendMessage() async {
-    final text = _messageController.text.trim();
-    if (text.isEmpty || _conversationId == null || _isSending) return;
-    _messageController.clear();
-    setState(() => _isSending = true);
-    await context.read<MessageProvider>().envoyerMessageDirect(_conversationId!, text);
-    setState(() => _isSending = false);
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-      }
-    });
+  final text = _messageController.text.trim();
+
+  if (text.isEmpty || _conversationId == null || _isSending) {
+    return;
   }
+
+  _messageController.clear();
+
+  setState(() => _isSending = true);
+
+  // Optimistic UI
+  context.read<MessageProvider>().ajouterMessageLocal({
+    'id': null,
+    'contenu': text,
+    'expediteur': int.tryParse(_currentUserId) ?? 0,
+    'date_envoi': DateTime.now().toIso8601String(),
+  });
+
+  _scrollToBottom();
+
+  try {
+    await context
+        .read<MessageProvider>()
+        .envoyerMessageDirect(_conversationId!, text);
+
+    // Synchronisation backend
+    await context
+        .read<MessageProvider>()
+        .fetchMessages(_conversationId!);
+
+    _scrollToBottom();
+  } catch (e) {
+    print("==> Erreur envoi message : $e");
+  } finally {
+    if (mounted) {
+      setState(() => _isSending = false);
+    }
+  }
+}
 
   void _showMessageOptions(int messageId, String contenuActuel) {
     showModalBottomSheet(
@@ -133,12 +177,6 @@ class _ChatPageDirectState extends State<ChatPageDirect> {
     );
   }
 
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -187,9 +225,6 @@ class _ChatPageDirectState extends State<ChatPageDirect> {
                           ),
                         );
                       }
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (_scrollController.hasClients) _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-                      });
                       return ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

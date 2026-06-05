@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/assistant_ia_page.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/detail_unite.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
+import 'package:mobile_flutter/Pages/pages_locataire/modificationProfilLocatairePage.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/notification_locataire.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/trouver_colocataire.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_flutter/widgets/widget_locataire/profil_completion_checker.dart';
+import 'package:mobile_flutter/service/local_storage.dart';
 
 class AccueilLocatairePage extends StatefulWidget {
   const AccueilLocatairePage({super.key});
@@ -47,7 +50,11 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
     super.initState();
     Future.microtask(() {
       context.read<UniteDProvider>().fetchUnitesDisponibles();
-       context.read<NotificationProvider>().fetchNotifications();
+      context.read<NotificationProvider>().fetchNotifications();
+      context.read<DemandeProvider>().fetchDemandes();
+      // ← Connecte WebSocket + Provider au stream
+      context.read<MessageProvider>().connecterWebSocket();
+      context.read<MessageProvider>().fetchConversations();
     });
   }
 
@@ -67,7 +74,8 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ProfilCompletionChecker(
+    child:Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       body: SafeArea(
         child: Column(
@@ -148,6 +156,7 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
         ),
       ),
       bottomNavigationBar: const LocataireNavBar(selectedIndex: 0),
+    )
     );
   }
 
@@ -415,20 +424,71 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          // Vérifie si les infos supplémentaires sont complètes
+                          final infos = await LocalStorage.getInfosSupplementaires();
+                          final filiere = infos['filiere'] ?? '';
+                          final ville = infos['ville'] ?? '';
+                          final telephone = infos['telephone'] ?? '';
+                          final description = infos['description'] ?? '';
+
+                          if (!context.mounted) return;
+
+                          if (filiere.isEmpty || ville.isEmpty || telephone.isEmpty || description.isEmpty) {
+                            // Infos incomplètes → redirige vers modification profil
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                title: const Row(
+                                  children: [
+                                    Icon(Icons.person_outline, color: Color(0xFF1A3C6E)),
+                                    SizedBox(width: 8),
+                                    Text('Profil incomplet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                                content: Text(
+                                  'Complétez vos informations supplémentaires pour chercher un colocataire.',
+                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Annuler'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(ctx);
+                                      Navigator.push(context, MaterialPageRoute(
+                                        builder: (_) => const ModificationProfilLocatairePage(),
+                                      ));
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1A3C6E),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    child: const Text('Compléter', style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Infos complètes → ouvre la page colocataire avec données préremplies
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => TrouverColocatairePage(
-                                uniteId: u['id'],     // ← passe l'ID de l'unité
+                                uniteId: u['id'],
                                 estPostulant: false,
+                                infosPreRemplies: infos, // ← passe les infos
                               ),
                             ),
                           );
                         },
                         icon: const Icon(Icons.person_add_outlined, size: 16),
-                        label: const Text('CHERCHER UN COLOCATAIRE',
-                            style: TextStyle(fontSize: 12)),
+                        label: const Text('TROUVER UN COLOCATAIRE', style: TextStyle(fontSize: 12)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1A3C6E),
                           foregroundColor: Colors.white,

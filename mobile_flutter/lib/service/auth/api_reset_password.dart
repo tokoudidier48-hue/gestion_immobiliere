@@ -6,7 +6,7 @@ class ApiResetPassword {
   late final Dio _dio;
   final CookieJar _cookieJar = CookieJar();
 
-  static const String baseUrl = 'http://10.190.5.129:8000';
+  static const String baseUrl = 'http://10.187.67.129:8000';
 
   ApiResetPassword() {
     _dio = Dio(BaseOptions(

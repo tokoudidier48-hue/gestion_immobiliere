@@ -30,25 +30,39 @@ class ProfilProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> modifierProfil({
+ Future<void> modifierProfil({
   required String firstName,
   required String lastName,
   required String telephone,
   File? photo,
+  // ← ajoute
+  String? filiere,
+  String? ville,
+  String? religion,
+  String? telephoneColoc,
+  String? description,
+  bool? fumeur,
+  bool? brutal,
 }) async {
   _isLoading = true;
   _error = null;
   notifyListeners();
-
   try {
     _profil = await _api.modifierProfil(
       firstName: firstName,
       lastName: lastName,
       telephone: telephone,
       photo: photo,
+      filiere: filiere,
+      ville: ville,
+      religion: religion,
+      telephoneColoc: telephoneColoc,
+      description: description,
+      fumeur: fumeur,
+      brutal: brutal,
     );
   } catch (e) {
-    _error = e.toString();
+    _error = e.toString().replaceAll('Exception: ', '');
   } finally {
     _isLoading = false;
     notifyListeners();

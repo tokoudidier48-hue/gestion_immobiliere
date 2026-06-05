@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/service/locataire/api_locataire.dart';
+import 'package:mobile_flutter/service/websocket_service.dart';
 
 class DemandeProvider extends ChangeNotifier {
   final ApiLocataire _api = ApiLocataire();
@@ -98,22 +101,6 @@ class PaiementProvider extends ChangeNotifier {
     }
   }
 
-  /*Future<bool> effectuerPaiement(Map<String, dynamic> data) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-    try {
-      await _api.effectuerPaiement(data);
-      await fetchPaiements();
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }*/
-
  Future<bool> effectuerPaiement({
   required int uniteId,
   required double montant,
@@ -173,6 +160,8 @@ Future<bool> demanderPaiementEspece({
   
 }
 
+// Remplace toute la classe MessageProvider par :
+
 class MessageProvider extends ChangeNotifier {
   final ApiLocataire _api = ApiLocataire();
 
@@ -181,12 +170,70 @@ class MessageProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   int _nonLus = 0;
+  int? _conversationOuverte; // ← conversation actuellement ouverte
+  StreamSubscription? _wsSubscription;
 
   List<dynamic> get conversations => _conversations;
   List<dynamic> get messages => _messages;
   bool get isLoading => _isLoading;
   String? get error => _error;
   int get nonLus => _nonLus;
+
+  // ── Connexion WebSocket ─────────────────────────────────────────────────
+  void connecterWebSocket() {
+    _wsSubscription?.cancel();
+    _wsSubscription = webSocketService.stream?.listen((data) {
+      _handleWebSocketMessage(data);
+    });
+  }
+
+  void _handleWebSocketMessage(Map<String, dynamic> data) {
+    final type = data['type'];
+    print("==> WebSocket message type: $type");
+
+    if (type == 'new_message') {
+      final convId = data['conversation_id'] as int?;
+      final msgData = data['message'] as Map<String, dynamic>?;
+
+      if (msgData == null) return;
+
+      // Si la conversation est ouverte → ajoute le message directement
+      if (_conversationOuverte != null && _conversationOuverte == convId) {
+        // Évite les doublons par ID
+        final msgId = msgData['id'];
+        final exists = _messages.any((m) => m['id'] == msgId);
+        if (!exists) {
+          _messages.add(msgData);
+          notifyListeners();
+        }
+      }
+
+      // Met à jour le badge non lus si conversation pas ouverte
+      if (_conversationOuverte != convId) {
+        _nonLus++;
+        // Met à jour le dernier message dans la liste des conversations
+        final idx = _conversations.indexWhere((c) => c['id'] == convId);
+        if (idx != -1) {
+          _conversations[idx]['dernier_message'] = {
+            'contenu': msgData['contenu'],
+            'date': msgData['date_envoi'],
+          };
+          final nonLusActuel = (_conversations[idx]['non_lus'] ?? 0) as int;
+          _conversations[idx]['non_lus'] = nonLusActuel + 1;
+        }
+        notifyListeners();
+      }
+    }
+  }
+
+  void setConversationOuverte(int? conversationId) {
+    _conversationOuverte = conversationId;
+  }
+
+  void deconnecterWebSocket() {
+    _wsSubscription?.cancel();
+    _wsSubscription = null;
+  }
 
   Future<void> fetchConversations() async {
     _isLoading = true;
@@ -197,7 +244,10 @@ class MessageProvider extends ChangeNotifier {
       try {
         _nonLus = await _api.getNonLusCount();
       } catch (_) {
-        _nonLus = 0;
+        // Calcule localement
+        _nonLus = _conversations.fold<int>(
+          0, (sum, c) => sum + ((c['non_lus'] ?? 0) as int),
+        );
       }
     } catch (e) {
       _error = e.toString();
@@ -221,86 +271,82 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
-  // Vide les messages sans déclencher rebuild
   void clearMessages() {
     _messages = [];
   }
 
-  // Récupère ou crée une conversation
   Future<int> getOuCreerConversation(int autreUserId, {int? uniteId}) async {
     return await _api.getOuCreerConversation(autreUserId, uniteId: uniteId);
   }
 
-  // Envoie dans une conversation connue
   Future<void> envoyerMessageDirect(int conversationId, String contenu) async {
-  try {
-    print("==> Envoi message direct dans conversation $conversationId");
-    final response = await _api.envoyerMessage(conversationId, contenu);
-    print("==> Réponse backend : ${response.data}");
-    // Ajoute la réponse du backend directement — pas de message local
-    _messages.add(response.data);
-    notifyListeners();
-  } catch (e) {
-    print("==> Erreur envoyerMessageDirect : $e");
-    _error = e.toString();
-    notifyListeners();
+    try {
+      final response = await _api.envoyerMessage(conversationId, contenu);
+      // Vérifie doublon avant d'ajouter
+      final msgId = response.data['id'];
+      final exists = _messages.any((m) => m['id'] == msgId);
+      if (!exists) {
+        _messages.add(response.data);
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
   }
-}
 
   void ajouterMessageLocal(Map<String, dynamic> message) {
-  _messages.add(message);
+    _messages.add(message);
     notifyListeners();
   }
 
- // Envoie via destinataire (crée la conversation si besoin)
- Future<void> envoyerMessage(int destinataireId, String contenu) async {
+  Future<void> envoyerMessage(int destinataireId, String contenu) async {
     try {
-      print("==> Envoi message à $destinataireId");
       final conversationId = await _api.getOuCreerConversation(destinataireId);
-      print("==> ConversationId : $conversationId");
       final response = await _api.envoyerMessage(conversationId, contenu);
-      print("==> Message envoyé : ${response.data}");
-      _messages.add(response.data);
-      notifyListeners();
+      final msgId = response.data['id'];
+      final exists = _messages.any((m) => m['id'] == msgId);
+      if (!exists) {
+        _messages.add(response.data);
+        notifyListeners();
+      }
     } catch (e) {
-      print("==> Erreur envoi message : $e");
       _error = e.toString();
       notifyListeners();
     }
   }
 
   Future<void> supprimerMessage(int messageId) async {
-  try {
-    await _api.supprimerMessage(messageId);
-    _messages.removeWhere((m) => m['id'] == messageId);
-    notifyListeners();
-  } catch (e) {
-    _error = e.toString();
-    notifyListeners();
-  }
-}
-
-Future<void> modifierMessage(int messageId, String nouveauContenu) async {
-  try {
-    final response = await _api.modifierMessage(messageId, nouveauContenu);
-    final index = _messages.indexWhere((m) => m['id'] == messageId);
-    if (index != -1) {
-      _messages[index] = response.data;
+    try {
+      await _api.supprimerMessage(messageId);
+      _messages.removeWhere((m) => m['id'] == messageId);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
     }
-    notifyListeners();
-  } catch (e) {
-    _error = e.toString();
-    notifyListeners();
   }
-}
 
-void clearAll() {
-  _conversations = [];
-  _messages = [];
-  _nonLus = 0;
-  _error = null;
-}
-  
+  Future<void> modifierMessage(int messageId, String nouveauContenu) async {
+    try {
+      final response = await _api.modifierMessage(messageId, nouveauContenu);
+      final index = _messages.indexWhere((m) => m['id'] == messageId);
+      if (index != -1) {
+        _messages[index] = response.data;
+      }
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  void clearAll() {
+    _conversations = [];
+    _messages = [];
+    _nonLus = 0;
+    _error = null;
+  }
 }
 
 class NotificationProvider extends ChangeNotifier {

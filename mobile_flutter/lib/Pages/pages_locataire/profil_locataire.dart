@@ -4,7 +4,6 @@ import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/Pages/pages_auth/connexion.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/modificationProfilLocatairePage.dart' hide kLocataireBlue;
 import 'package:mobile_flutter/Pages/pages_locataire/notification_locataire.dart';
-import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/Pages/a_propos.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/provider/provider_profil.dart';
