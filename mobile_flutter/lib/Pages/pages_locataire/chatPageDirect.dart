@@ -31,22 +31,21 @@ class _ChatPageDirectState extends State<ChatPageDirect> {
   bool _isLoadingMessages = false;
   Set<int> _messageIds = {}; 
 
+  late MessageProvider _messageProvider;
 @override
 void initState() {
   super.initState();
+  _messageProvider = context.read<MessageProvider>();
   Future.microtask(() async {
     _currentUserId = await LocalStorage.getUserId() ?? '';
     try {
-      final convId = await context.read<MessageProvider>()
-          .getOuCreerConversation(widget.autreUserId, uniteId: widget.uniteId);
-      _conversationId = convId;
+        final convId = await _messageProvider.getOuCreerConversation( // ← remplace context.read...
+            widget.autreUserId, uniteId: widget.uniteId);
+        _conversationId = convId;
       if (!mounted) return;
-
-      // ← Indique conversation ouverte pour WebSocket
-      context.read<MessageProvider>().setConversationOuverte(convId);
-
-      await context.read<MessageProvider>().fetchMessages(_conversationId!);
-      _scrollToBottom();
+        _messageProvider.setConversationOuverte(convId);    // ← remplace context.read...
+        await _messageProvider.fetchMessages(_conversationId!); // ← remplace context.read...
+        _scrollToBottom();
     } catch (e) {
       print("==> Erreur init ChatPageDirect : $e");
     }
@@ -56,7 +55,7 @@ void initState() {
 
 @override
 void dispose() {
-  context.read<MessageProvider>().setConversationOuverte(null);
+  _messageProvider.setConversationOuverte(null);  
   _messageController.dispose();
   _scrollController.dispose();
   super.dispose();

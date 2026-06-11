@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/Config/app_config.dart';
 const String kBaseUrl = 'http://10.190.5.129:8000';
 class ApiLocataire {
   final Dio _dio;
 
   ApiLocataire() : _dio = Dio(
     BaseOptions(
-      baseUrl: 'http://10.187.67.129:8000',
-      //baseUrl: 'http://10.92.225.129:8000', // URL de ton API
+      baseUrl: '${AppConfig.baseUrl}',
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 120),
       headers: {'Content-Type': 'application/json'},

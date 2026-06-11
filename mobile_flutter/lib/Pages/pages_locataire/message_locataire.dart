@@ -290,17 +290,16 @@ class _ChatPageState extends State<ChatPage> {
   bool _isSending = false;
   bool _isLoadingMessages = false;
 
+  late MessageProvider _messageProvider;
   @override
   void initState() {
     super.initState();
+    _messageProvider = context.read<MessageProvider>();
     Future.microtask(() async {
       _currentUserId = await LocalStorage.getUserId() ?? '';
       if (!mounted) return;
-
-      // Indique quelle conversation est ouverte
-      context.read<MessageProvider>().setConversationOuverte(widget.conversationId);
-
-      await context.read<MessageProvider>().fetchMessages(widget.conversationId);
+      _messageProvider.setConversationOuverte(widget.conversationId); // ← remplace context.read...
+      await _messageProvider.fetchMessages(widget.conversationId);  
       _scrollToBottom();
     });
   }
@@ -308,7 +307,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void dispose() {
     // Réinitialise la conversation ouverte
-    context.read<MessageProvider>().setConversationOuverte(null);
+    _messageProvider.setConversationOuverte(null);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();

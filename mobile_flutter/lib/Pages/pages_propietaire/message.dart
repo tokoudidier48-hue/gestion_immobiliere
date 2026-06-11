@@ -15,20 +15,22 @@ class _MessagesPageState extends State<MessagesPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _currentUserId = '';
-
+  late MessageProvider _messageProvider;
   @override
   void initState() {
     super.initState();
+    _messageProvider = context.read<MessageProvider>();
     Future.microtask(() async {
       _currentUserId = await LocalStorage.getUserId() ?? '';
       if (mounted) {
-        context.read<MessageProvider>().fetchConversations();
+        await _messageProvider.fetchConversations();
       }
     });
   }
 
   @override
   void dispose() {
+    _messageProvider.setConversationOuverte(null);
     _searchController.dispose();
     super.dispose();
   }
@@ -363,16 +365,17 @@ class _ConversationDetailPageState extends State<ConversationDetailPage> {
   final ScrollController _scrollController = ScrollController();
   String _currentUserId = '';
   bool _isSending = false;
-
+  late MessageProvider _messageProvider;
   // Dans _ConversationDetailPageState, remplace initState par :
 @override
 void initState() {
   super.initState();
+  _messageProvider = context.read<MessageProvider>(); 
   Future.microtask(() async {
     _currentUserId = await LocalStorage.getUserId() ?? '';
     if (!mounted) return;
-    context.read<MessageProvider>().setConversationOuverte(widget.conversationId);
-    await context.read<MessageProvider>().fetchMessages(widget.conversationId);
+      _messageProvider.setConversationOuverte(widget.conversationId);
+      await _messageProvider.fetchMessages(widget.conversationId);
   });
 }
 

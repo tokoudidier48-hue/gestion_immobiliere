@@ -1,12 +1,14 @@
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:mobile_flutter/Config/app_config.dart';
 
 class ApiResetPassword {
   late final Dio _dio;
   final CookieJar _cookieJar = CookieJar();
 
-  static const String baseUrl = 'http://10.187.67.129:8000';
+  static const String baseUrl = '${AppConfig.baseUrl}';
+
 
   ApiResetPassword() {
     _dio = Dio(BaseOptions(

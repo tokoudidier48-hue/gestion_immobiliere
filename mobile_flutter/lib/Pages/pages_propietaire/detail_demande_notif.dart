@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:mobile_flutter/Config/app_config.dart';
 
 class DetailDemandeNotifPage extends StatefulWidget {
   final int demandeId;
@@ -12,7 +13,7 @@ class DetailDemandeNotifPage extends StatefulWidget {
 
 class _DetailDemandeNotifPageState extends State<DetailDemandeNotifPage> {
   final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'http://10.91.174.129:8000',
+    baseUrl: '${AppConfig.baseUrl}',
     headers: {'Content-Type': 'application/json'},
   ));
 

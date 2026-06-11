@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/Config/app_config.dart';
 
 class WebSocketService {
-  static const String _wsBaseUrl = 'ws://10.187.67.129:8000/ws/notifications/';
+  static const String _wsBaseUrl = '${AppConfig.baseUrl}/ws/notifications/';
 
   WebSocketChannel? _channel;
   StreamController<Map<String, dynamic>>? _controller;
@@ -36,10 +37,12 @@ class WebSocketService {
     }
 
     try {
-      print("==> WebSocket : connexion à $_wsBaseUrl");
+      final wsUrl = '${_wsBaseUrl}?token=$token';
+      print("==> URL WebSocket : $wsUrl");
+
+
       _channel = IOWebSocketChannel.connect(
-        Uri.parse(_wsBaseUrl),
-        headers: {'Authorization': 'Bearer $token'},
+        Uri.parse(wsUrl),
       );
 
       _isConnected = true;
@@ -60,11 +63,14 @@ class WebSocketService {
         onError: (error) {
           print("==> WebSocket erreur : $error");
           _isConnected = false;
+          _channel = null;
           _scheduleReconnect();
         },
+
         onDone: () {
           print("==> WebSocket fermé");
           _isConnected = false;
+          _channel = null;
           _scheduleReconnect();
         },
       );
@@ -73,6 +79,7 @@ class WebSocketService {
     } catch (e) {
       print("==> WebSocket échec connexion : $e");
       _isConnected = false;
+      _channel = null;
       _scheduleReconnect();
     }
   }

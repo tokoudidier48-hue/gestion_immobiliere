@@ -3,15 +3,14 @@ import 'package:dio/dio.dart';
 import 'package:mobile_flutter/model/proprietaire/proprietes.dart';
 import 'package:mobile_flutter/model/proprietaire/unites.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/Config/app_config.dart';
 
 class ApiProprietaire {
   final Dio _dio;
 
   ApiProprietaire() : _dio = Dio(
     BaseOptions(
-      //baseUrl: 'http://192.168.100.22:8000',
-      baseUrl: 'http://10.187.67.129:8000', // URL de ton API
-      //baseUrl: 'http://10.92.225.129:8000', // URL de ton API
+      baseUrl: '${AppConfig.baseUrl}', // URL de ton API
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       headers: {
