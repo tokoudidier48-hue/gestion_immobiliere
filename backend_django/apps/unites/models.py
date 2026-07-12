@@ -1,6 +1,9 @@
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from comptes.models import Utilisateur
 from proprietes.models import Propriete
+from PIL import Image
 
 class Unite(models.Model):
     TYPE_UNITE_CHOIX = [
@@ -97,6 +100,21 @@ class Unite(models.Model):
         default='libre',
         verbose_name="Statut"
     )
+    # ⭐ NOUVEAU CHAMP : locataire actuel (optionnel pour suivre qui occupe) ⭐
+    locataire_actuel = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='unites_occupees',
+        limit_choices_to={'role': 'locataire'},
+        verbose_name="Locataire actuel"
+    )
+    date_debut_location = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date de début de location"
+    )
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
 
@@ -119,19 +137,49 @@ class PhotoUnite(models.Model):
         related_name='photos',
         verbose_name="Unité"
     )
+
     image = models.ImageField(
         upload_to='unites/',
         verbose_name="Photo"
     )
+
     est_principale = models.BooleanField(
         default=False,
         verbose_name="Photo principale"
     )
+
     ordre = models.IntegerField(
         default=0,
         verbose_name="Ordre d'affichage"
     )
+
     date_upload = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.image:
+            img = Image.open(self.image.path)
+
+            # ⭐ Conversion RGB si PNG/RGBA
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+
+            # ⭐ Largeur maximale
+            max_width = 800
+
+            if img.width > max_width:
+                ratio = max_width / float(img.width)
+                new_height = int(float(img.height) * ratio)
+
+                img = img.resize((max_width, new_height))
+
+            # ⭐ Compression image
+            img.save(
+                self.image.path,
+                optimize=True,
+                quality=70
+            )
 
     def __str__(self):
         return f"Photo {self.ordre} - {self.unite.nom}"

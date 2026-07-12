@@ -4,7 +4,7 @@ from unites.models import Unite
 from proprietes.models import Propriete
 
 class Locataire(models.Model):
-    """Modèle représentant un locataire (géré par le propriétaire)"""
+    """Modèle représentant un locataire dans une propriété"""
     
     MODE_PAIEMENT_CHOIX = [
         ('en_ligne', 'Paiement en ligne'),
@@ -12,38 +12,36 @@ class Locataire(models.Model):
     ]
     
     # Relation avec le compte utilisateur (le locataire a un compte)
-    utilisateur = models.OneToOneField(
+    # ⭐ MODIFICATION : ForeignKey au lieu de OneToOne (un locataire peut louer plusieurs propriétés) ⭐
+    utilisateur = models.ForeignKey(
         Utilisateur,
         on_delete=models.CASCADE,
-        related_name='profil_locataire',
+        related_name='locations',
         verbose_name="Compte utilisateur",
         limit_choices_to={'role': 'locataire'}
     )
     
-    # Unité louée
-    unite = models.ForeignKey(
-        Unite,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='locataires_occupants',
-        verbose_name="Unité louée"
-    )
-    
-    # Propriété (pour regrouper les locataires par propriété)
+    # ⭐ NOUVEAU : Propriété (clé principale pour regrouper les locataires) ⭐
     propriete = models.ForeignKey(
         Propriete,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.CASCADE,
         related_name='locataires',
         verbose_name="Propriété"
     )
     
+    # ⭐ MODIFICATION : OneToOneField pour qu'un locataire soit lié à une seule unité ⭐
+    # ⭐ on_delete=models.SET_NULL : suppression du locataire NE supprime PAS l'unité ⭐
+    unite = models.OneToOneField(
+        Unite,
+        on_delete=models.SET_NULL,  # ⭐ CHANGÉ : ne supprime pas l'unité
+        null=True,
+        blank=True,
+        related_name='locataire_associe',
+        verbose_name="Unité louée"
+    )
+    
     # Date d'entrée dans les lieux
     date_entree = models.DateField(
-        null=True, 
-        blank=True,
         verbose_name="Date d'entrée"
     )
     
@@ -55,12 +53,25 @@ class Locataire(models.Model):
         verbose_name="Mode de paiement"
     )
     
+    # Statut du locataire
+    est_actif = models.BooleanField(
+        default=True,
+        verbose_name="Locataire actif"
+    )
+    
     # Métadonnées
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        verbose_name = "Locataire"
+        verbose_name_plural = "Locataires"
+        ordering = ['-date_entree']
+        # ⭐ Empêcher un même locataire d'être ajouté deux fois à la même propriété ⭐
+        unique_together = ['utilisateur', 'propriete']
+    
     def __str__(self):
-        return f"{self.utilisateur.get_full_name()} - {self.unite.nom if self.unite else 'Aucune unité'}"
+        return f"{self.utilisateur.get_full_name()} - {self.propriete.nom}"
     
     @property
     def nom(self):
@@ -78,7 +89,10 @@ class Locataire(models.Model):
     def telephone(self):
         return self.utilisateur.telephone
     
-    class Meta:
-        verbose_name = "Locataire"
-        verbose_name_plural = "Locataires"
-        ordering = ['-date_entree']
+    @property
+    def unite_nom(self):
+        return self.unite.nom if self.unite else "Non assigné"
+    
+    @property
+    def propriete_nom(self):
+        return self.propriete.nom

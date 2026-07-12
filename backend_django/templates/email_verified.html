@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoyaSmart - Vérification</title>
+
+    <style>
+        :root {
+            --primary: #4facfe;
+            --secondary: #00f2fe;
+            --success: #28a745;
+            --bg-light: #ffffff;
+            --text-light: #333;
+            --bg-dark: #121212;
+            --text-dark: #f1f1f1;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            transition: 0.3s;
+        }
+
+        body.dark {
+            background: var(--bg-dark);
+        }
+
+        .container {
+            background: var(--bg-light);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: 0.3s;
+        }
+
+        body.dark .container {
+            background: #1e1e1e;
+            color: var(--text-dark);
+        }
+
+        .logo {
+            width: 80px;
+            margin-bottom: 15px;
+        }
+
+        h2 {
+            margin-top: 10px;
+        }
+
+        p {
+            color: #666;
+        }
+
+        body.dark p {
+            color: #ccc;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #eee;
+            border-top: 6px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .checkmark {
+            display: none;
+            margin: auto;
+            width: 70px;
+        }
+
+        .checkmark path {
+            stroke: var(--success);
+            stroke-width: 4;
+            fill: none;
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+            animation: draw 0.6s forwards;
+        }
+
+        @keyframes draw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #00c6ff;
+        }
+
+        .toggle-theme {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        body.dark .toggle-theme {
+            background: #333;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="toggle-theme" onclick="toggleTheme()">🌙 Mode</div>
+
+<div class="container">
+    <!-- LOGO -->
+    <img src="logo.png" alt="LoyaSmart" class="logo">
+
+    <div id="loader" class="loader"></div>
+
+    <svg id="check" class="checkmark" viewBox="0 0 52 52">
+        <path d="M14 27 l7 7 l16 -16"/>
+    </svg>
+
+    <h2 id="title">Vérification en cours...</h2>
+    <p id="text">Activation de votre compte LoyaSmart...</p>
+
+    <button id="btn" onclick="openApp()">Ouvrir l'application</button>
+</div>
+
+<script>
+    function openApp() {
+        const ua = navigator.userAgent || navigator.vendor;
+
+        // Android
+        if (/android/i.test(ua)) {
+            window.location.href = "myapp://email-verified";
+        }
+        // iOS
+        else if (/iPad|iPhone|iPod/.test(ua)) {
+            window.location.href = "myapp://email-verified";
+        }
+        // Fallback Web
+        else {
+            window.location.href = "https://tonsite.com";
+        }
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle("dark");
+    }
+
+    // Animation
+    setTimeout(() => {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("check").style.display = "block";
+
+        document.getElementById("title").innerText = "Email vérifié ✅";
+        document.getElementById("text").innerText = "Votre compte est maintenant actif.";
+
+        document.getElementById("btn").style.display = "inline-block";
+    }, 2000);
+
+    // Redirection auto
+    setTimeout(() => {
+        openApp();
+    }, 4000);
+</script>
+
+</body>
+</html>

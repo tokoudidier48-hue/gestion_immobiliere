@@ -1,0 +1,12 @@
+# Ignorer les fichiers Python compilés
+*.pyc
+__pycache__/
+
+# Ignorer les fichiers d'environnement
+*.env
+.env
+
+# Ignorer les dossiers spécifiques de Django
+db.sqlite3
+/media
+/staticfiles.env 

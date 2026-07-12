@@ -21,13 +21,37 @@ class PaiementAdmin(admin.ModelAdmin):
         ('Période concernée', {'fields': ('periode_debut', 'periode_fin')}),
         ('Dates', {'fields': ('date_paiement', 'date_confirmation')}),
     )
-    actions = ['confirmer_paiements']
+    actions = ['accepter_paiements', 'refuser_paiements', 'confirmer_paiements']
+
+    def accepter_paiements(self, request, queryset):
+        """Action admin pour accepter les paiements en espèces"""
+        count = 0
+        for paiement in queryset:
+            if paiement.mode_paiement == 'especes' and paiement.statut == 'en_attente':
+                paiement.accepter()
+                count += 1
+        self.message_user(request, f"{count} paiement(s) en espèces accepté(s)")
+    accepter_paiements.short_description = "Accepter les paiements en espèces sélectionnés"
+
+    def refuser_paiements(self, request, queryset):
+        """Action admin pour refuser les paiements en espèces"""
+        count = 0
+        for paiement in queryset:
+            if paiement.mode_paiement == 'especes' and paiement.statut == 'en_attente':
+                paiement.refuser()
+                count += 1
+        self.message_user(request, f"{count} paiement(s) en espèces refusé(s)")
+    refuser_paiements.short_description = "Refuser les paiements en espèces sélectionnés"
 
     def confirmer_paiements(self, request, queryset):
+        """Action admin pour confirmer les paiements mobiles"""
+        count = 0
         for paiement in queryset:
-            paiement.confirmer()
-        self.message_user(request, f"{queryset.count()} paiement(s) confirmé(s)")
-    confirmer_paiements.short_description = "Confirmer les paiements sélectionnés"
+            if paiement.mode_paiement != 'especes' and paiement.statut == 'en_attente':
+                paiement.confirmer()
+                count += 1
+        self.message_user(request, f"{count} paiement(s) confirmé(s)")
+    confirmer_paiements.short_description = "Confirmer les paiements mobiles sélectionnés"
 
 
 @admin.register(Recu)

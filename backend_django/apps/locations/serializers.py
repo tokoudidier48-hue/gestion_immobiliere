@@ -7,16 +7,26 @@ class DemandeUniteSerializer(serializers.ModelSerializer):
     unite_nom = serializers.CharField(source='unite.nom', read_only=True)
     unite_type = serializers.CharField(source='unite.get_type_unite_display', read_only=True)
     unite_loyer = serializers.DecimalField(source='unite.loyer', max_digits=10, decimal_places=0, read_only=True)
+    unite_caution = serializers.DecimalField(source='unite.prix_caution', max_digits=10, decimal_places=0, read_only=True)  # ⭐ AJOUT
+    unite_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = DemandeUnite
         fields = [
             'id', 'locataire', 'locataire_nom', 'proprietaire', 'proprietaire_nom',
-            'unite', 'unite_nom', 'unite_type', 'unite_loyer', 'message',
-            'statut', 'date_demande', 'date_reponse'
+            'unite', 'unite_nom', 'unite_type', 'unite_loyer', 'unite_caution', 'unite_photo',
+            'message', 'statut', 'date_demande', 'date_reponse'
         ]
         read_only_fields = ['locataire', 'proprietaire', 'statut', 'date_demande', 'date_reponse']
 
+    def get_unite_photo(self, obj):
+        """Retourne l'URL de la première photo de l'unité (ou None)"""
+        unite = obj.unite
+        if unite and hasattr(unite, 'photos') and unite.photos.exists():
+            premiere_photo = unite.photos.first()
+            if premiere_photo.image:
+                return premiere_photo.image.url
+        return None
 
 class DemandeUniteCreateSerializer(serializers.ModelSerializer):
     class Meta:

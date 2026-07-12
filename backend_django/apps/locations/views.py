@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from .models import DemandeUnite
 from .serializers import DemandeUniteSerializer, DemandeUniteCreateSerializer
-from notifications.models import Notification  # Ajout de l'import
+from notifications.models import Notification
+
 
 class DemandeUniteViewSet(viewsets.ModelViewSet):
     queryset = DemandeUnite.objects.all()
@@ -22,6 +23,17 @@ class DemandeUniteViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return DemandeUniteCreateSerializer
         return DemandeUniteSerializer
+
+    def create(self, request, *args, **kwargs):
+        """Création d'une demande avec retour du sérializer complet"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        # Retourner le sérializer de lecture avec toutes les informations
+        instance = serializer.instance
+        read_serializer = DemandeUniteSerializer(instance)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
         demande = serializer.save()
@@ -44,16 +56,21 @@ class DemandeUniteViewSet(viewsets.ModelViewSet):
         if demande.unite.statut != 'libre':
             return Response({'error': 'L\'unité n\'est plus disponible.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # ⭐ Appeler la méthode accepter qui va aussi occuper l'unité ⭐
         demande.accepter()
+        
         # Notification au locataire pour acceptation
         Notification.objects.create(
             destinataire=demande.locataire,
             type='reponse_demande',
             titre='Demande acceptée',
-            message=f"Votre demande pour {demande.unite.nom} a été acceptée par le propriétaire.",
+            message=f"Votre demande pour {demande.unite.nom} a été acceptée par le propriétaire. Vous pouvez maintenant effectuer le paiement.",
             lien=f'/demandes/{demande.id}'
         )
-        return Response({'message': 'Demande acceptée avec succès.'})
+        return Response({
+            'message': 'Demande acceptée avec succès',
+            'unite_statut': demande.unite.statut
+        })
 
     @action(detail=True, methods=['post'])
     def refuser(self, request, pk=None):

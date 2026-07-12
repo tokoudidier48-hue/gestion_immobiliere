@@ -51,7 +51,6 @@ class DemandeUnite(models.Model):
         verbose_name = "Demande d'unité"
         verbose_name_plural = "Demandes d'unités"
         ordering = ['-date_demande']
-        # Empêcher un locataire d'avoir plusieurs demandes en attente pour la même unité
         unique_together = ('locataire', 'unite', 'statut')
 
     def __str__(self):
@@ -62,6 +61,10 @@ class DemandeUnite(models.Model):
         self.statut = 'acceptee'
         self.date_reponse = timezone.now()
         self.save()
+        
+        # ⭐ Reserver L'UNITÉ ⭐
+        self.unite.statut = 'reserve'
+        self.unite.save()
 
     def refuser(self):
         from django.utils import timezone
