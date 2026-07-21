@@ -459,4 +459,89 @@ Future<void> modifierLocataire({
   }
 }
 
+
+// ── SOLDE & RETRAIT ──────────────────────────────────────────────────────────
+
+Future<Map<String, dynamic>> getSolde() async {
+  try {
+    final response = await _dio.get('/api/comptes/solde/');
+    print("==> Solde : ${response.data}");
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<Map<String, dynamic>> demanderRetrait({
+  required double montant,
+  required String telephone,
+  required String operateur,
+}) async {
+  try {
+    final response = await _dio.post(
+      '/api/paiements/retrait/',
+      data: {
+        'montant': montant.toInt(),
+        'telephone': telephone,
+        'operateur': operateur,
+      },
+    );
+    print("==> Retrait initié : ${response.data}");
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data['error'] ?? e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<Map<String, dynamic>> getRecuRetrait(int recuId) async {
+  try {
+    final response = await _dio.get('/api/paiements/recus-retrait/$recuId/');
+    print("==> Reçu retrait $recuId : ${response.data}");
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<List<dynamic>> getHistoriqueRetraits() async {
+  try {
+    final response = await _dio.get('/api/paiements/recus-retrait/');
+    print("==> Historique retraits : ${response.data}");
+    return response.data as List;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<List<int>> telechargerPdfRetrait(int recuId) async {
+  try {
+    final response = await _dio.get(
+      '/api/paiements/recus-retrait/$recuId/download/',
+      options: Options(
+        responseType: ResponseType.bytes,
+        followRedirects: true,
+        validateStatus: (status) => status != null && status < 500,
+      ),
+    );
+    return List<int>.from(response.data);
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
 }

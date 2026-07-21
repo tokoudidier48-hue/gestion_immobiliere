@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/model/utilisateur.dart';
 import 'package:mobile_flutter/service/auth/api.dart';
+import 'package:mobile_flutter/service/local_storage.dart';
 
 class ProfilProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -66,6 +67,27 @@ class ProfilProvider extends ChangeNotifier {
   } finally {
     _isLoading = false;
     notifyListeners();
+  }
+}
+
+Future<void> fetchEtSauvegarderInfosSupp() async {
+  try {
+    final infos = await _api.getInfosSupplementairesBackend();
+    // Sauvegarde localement pour accès hors ligne
+    await LocalStorage.saveInfosSupplementaires(infos);
+
+    // Met à jour le flag profil complet
+    final filiere = infos['filiere'] ?? '';
+    final ville = infos['ville'] ?? '';
+    final telephone = infos['telephone'] ?? '';
+    final description = infos['description'] ?? '';
+    if (filiere.isNotEmpty && ville.isNotEmpty &&
+        telephone.isNotEmpty && description.isNotEmpty) {
+      await LocalStorage.setProfilComplete(true);
+    }
+    notifyListeners();
+  } catch (e) {
+    print("==> Erreur fetchEtSauvegarderInfosSupp : $e");
   }
 }
 

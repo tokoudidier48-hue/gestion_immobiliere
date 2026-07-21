@@ -157,6 +157,36 @@ Future<bool> demanderPaiementEspece({
     notifyListeners();
   }
 }
+
+Future<Map<String, dynamic>?> initierPaiement({
+  required int uniteId,
+  required int? demandeId,
+  required String typePaiement,
+  required String modePaiement,
+  required double montant,
+  required String numeroPaiement,
+}) async {
+  _isLoading = true;
+  _error = null;
+  notifyListeners();
+  try {
+    final result = await _api.initierPaiement(
+      uniteId: uniteId,
+      demandeId: demandeId,
+      typePaiement: typePaiement,
+      modePaiement: modePaiement,
+      montant: montant,
+      numeroPaiement: numeroPaiement,
+    );
+    return result;
+  } catch (e) {
+    _error = e.toString();
+    return null;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
+  }
+}
   
 }
 
@@ -257,7 +287,18 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchMessages(int conversationId) async {
+  Future<void> supprimerConversation(int conversationId) async {
+  try {
+    await _api.supprimerConversation(conversationId);
+    _conversations.removeWhere((c) => c['id'] == conversationId);
+    notifyListeners();
+  } catch (e) {
+    _error = e.toString();
+    notifyListeners();
+  }
+}
+
+  /*Future<void> fetchMessages(int conversationId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -270,10 +311,40 @@ class MessageProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+*/
+
+Future<void> fetchMessages(int conversationId) async {
+  _error = null;
+  try {
+    _messages.clear();
+    final nouveaux = await _api.getMessages(conversationId);
+    final idsExistants = _messages
+        .where((m) => m['id'] != null)
+        .map((m) => m['id'])
+        .toSet();
+    for (final msg in nouveaux) {
+      if (!idsExistants.contains(msg['id'])) {
+        _messages.add(msg);
+      }
+    }
+    _messages.sort((a, b) {
+      final da = DateTime.tryParse(a['date_envoi'] ?? '') ?? DateTime(2000);
+      final db = DateTime.tryParse(b['date_envoi'] ?? '') ?? DateTime(2000);
+      return da.compareTo(db);
+    });
+    notifyListeners();
+  } catch (e) {
+    // ← Message court et propre, jamais le HTML brut
+    _error = "Connexion au serveur interrompue";
+    print("==> Erreur fetchMessages (masquée à l'UI) : $e");
+    notifyListeners();
+  }
+}
 
   void clearMessages() {
-    _messages = [];
-  }
+  _messages.clear();
+  notifyListeners();
+}
 
   Future<int> getOuCreerConversation(int autreUserId, {int? uniteId}) async {
     return await _api.getOuCreerConversation(autreUserId, uniteId: uniteId);

@@ -38,7 +38,17 @@ class _SessionWrapperState extends State<SessionWrapper>
     }
   });
     print("==> SessionWrapper initialisé, timer démarré");
+
+    // Dans la méthode qui gère le succès du login, ajoute :
+    Future.microtask(() async {
+      try {
+        await webSocketService.connect();
+      } catch (e) {
+        print("==> Erreur init WS : $e");
+      }
+});
   }
+  
 
   @override
   void dispose() {

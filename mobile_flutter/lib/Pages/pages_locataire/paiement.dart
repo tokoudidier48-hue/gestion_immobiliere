@@ -4,6 +4,8 @@ import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:mobile_flutter/service/locataire/api_locataire.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_flutter/Config/app_config.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class PaiementPage extends StatefulWidget {
   final Map<String, dynamic>? unite;
@@ -139,7 +141,7 @@ class _PaiementPageState extends State<PaiementPage> {
   final proprietaireNom = demande['proprietaire_nom'] ?? '';
   final photoPath = demande['unite_photo']?.toString() ?? '';
   
-  const baseUrl = 'http://10.199.70.129:8000';
+  const baseUrl = AppConfig.baseUrl; // ← Utilise la constante depuis AppConfig
   final fullUrl = photoPath.isNotEmpty
       ? (photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath')
       : '';
@@ -210,21 +212,7 @@ class _PaiementPageState extends State<PaiementPage> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8)),
-              child: const Row(children: [
-                Text('Payer',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green)),
-                SizedBox(width: 4),
-                Icon(Icons.arrow_forward_ios, size: 10, color: Colors.green),
-              ]),
-            ),
+            
           ],
         ),
       ),
@@ -312,7 +300,7 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
 
   double get _montant {
     final loyer = double.tryParse(_loyer) ?? 0;
-    return _selectedMainTab == 0 ? loyer * 3 : loyer;
+    return _selectedMainTab == 0 ? (loyer * 3) + (double.tryParse(_caution) ?? 0) : loyer;
   }
 
   // ── Vérification avance ──────────────────────────────────────────────────
@@ -453,7 +441,7 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
   // ── Carte logement ────────────────────────────────────────────────────────
 
   Widget _buildLogementCard() {
-  const baseUrl = 'http://10.199.70.129:8000';
+  const baseUrl = AppConfig.baseUrl; // ← Utilise la constante depuis AppConfig
   
   // Priorité : unite_photo → photos liste
   String imageUrl = '';
@@ -786,60 +774,313 @@ class _PaiementFormPageState extends State<_PaiementFormPage> {
     );
   }
 
-  // ── Logique paiement ──────────────────────────────────────────────────────
+void _handlePaiement(PaiementProvider provider) async {
+  final id = _uniteId;
+  if (id == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unité introuvable')));
+    return;
+  }
 
-  void _handlePaiement(PaiementProvider provider) async {
-    final id = _uniteId;
-    print("==> ID envoyé au backend : $id");
-    print("==> Montant : $_montant");
-    print("==> Type : ${_selectedMainTab == 0 ? 'avance' : 'loyer'}");
-    print("==> Mode : ${_selectedMode == 0 ? 'en ligne' : 'espèce'}");
+  // ── Paiement en espèce ──────────────────────────────────────────────────
+  if (_selectedMode == 1) {
+    final success = await provider.demanderPaiementEspece(
+      uniteId: id,
+      montant: _montant,
+      typePaiement: _selectedMainTab == 0 ? 'avance' : 'loyer',
+      demandeId: _demandeId,
+    );
+    if (!mounted) return;
+    if (success) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(children: [
+            Icon(Icons.info_outline, color: Color(0xFF1A3C6E)),
+            SizedBox(width: 8),
+            Text('Paiement en espèces'),
+          ]),
+          content: const Text(
+            'Votre paiement a été enregistré. Le propriétaire doit le valider manuellement.',
+            style: TextStyle(fontSize: 13, height: 1.5),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                if (_selectedMainTab == 0) setState(() => _aDejaPayeAvance = true);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3C6E)),
+              child: const Text('OK', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Erreur : ${provider.error}'),
+        backgroundColor: Colors.red,
+      ));
+    }
+    return;
+  }
 
-    if (id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unité introuvable')));
+  // ── Paiement en ligne via FedaPay ────────────────────────────────────────
+  final phone = _phoneController.text
+    .trim()
+    .replaceAll('(+229)', '')
+    .replaceAll('+229', '')
+    .replaceAll(' ', '')
+    .trim();
+  if (phone.isEmpty ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez entrer votre numéro de téléphone')));
+    return;
+  }
+
+  try {
+    final api = ApiLocataire();
+    final result = await api.initierPaiement(
+      uniteId: id,
+      demandeId: _demandeId,
+      typePaiement: _selectedMainTab == 0 ? 'avance' : 'loyer',
+      modePaiement: _paymentOptions[_selectedPayment]['code'],
+      montant: _montant,
+      numeroPaiement: phone,
+    );
+
+    if (!mounted) return;
+
+    // ← Utilise directement payment_url retournée par le backend
+    final String? paymentToken = result['payment_token']?.toString();
+final int? paiementId = result['paiement_id'] is int
+    ? result['paiement_id']
+    : int.tryParse(result['paiement_id']?.toString() ?? '');
+
+if (paymentToken == null || paymentToken.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Erreur : token de paiement introuvable')));
+  return;
+}
+
+// ← Construit l'URL depuis le token (format FedaPay sandbox)
+final String paymentUrl =
+    'https://sandbox-process.fedapay.com/$paymentToken';
+
+    // ← Ouvre la WebView avec l'URL complète payment_url
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _FedaPayWebView(
+          paymentToken: paymentToken ?? '',
+          paiementUrl: paymentUrl, // ← URL complète directe du backend
+          paiementId: paiementId,
+          onSuccess: () {
+            if (_selectedMainTab == 0) setState(() => _aDejaPayeAvance = true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Paiement validé avec succès !'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pop(context);
+          },
+          onFailure: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('❌ Paiement échoué, veuillez réessayer'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+    final msg = e.toString().replaceAll('Exception: ', '');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Erreur : $msg'),
+      backgroundColor: Colors.red,
+    ));
+  }
+}
+}
+
+
+
+
+class _FedaPayWebView extends StatefulWidget {
+  final String paymentToken;
+  final String paiementUrl;
+  final int? paiementId;
+  final VoidCallback onSuccess;
+  final VoidCallback onFailure;
+
+  const _FedaPayWebView({
+    required this.paymentToken,
+    required this.paiementUrl,
+    this.paiementId,
+    required this.onSuccess,
+    required this.onFailure,
+  });
+
+  @override
+  State<_FedaPayWebView> createState() => _FedaPayWebViewState();
+}
+
+class _FedaPayWebViewState extends State<_FedaPayWebView> {
+  late final WebViewController _controller;
+  bool _loading = true;
+  bool _handled = false; // ← évite double callback
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setUserAgent(
+          'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 Chrome/91.0.4472.114 Mobile Safari/537.36')
+      ..setNavigationDelegate(NavigationDelegate(
+        onPageStarted: (url) {
+          print("==> WebView pageStarted : $url");
+          if (mounted) setState(() => _loading = true);
+          _checkUrl(url);
+        },
+        onPageFinished: (url) {
+          print("==> WebView pageFinished : $url");
+          if (mounted) setState(() => _loading = false);
+          _checkUrl(url);
+
+          // ← Injecte JS pour intercepter les messages postMessage de FedaPay
+          _controller.runJavaScript('''
+            window.addEventListener('message', function(event) {
+              console.log('FedaPay event: ' + JSON.stringify(event.data));
+              if (event.data && event.data.type === 'payment.completed') {
+                window.location.href = window.location.href + '?status=approved';
+              } else if (event.data && event.data.type === 'payment.failed') {
+                window.location.href = window.location.href + '?status=failed';
+              }
+            });
+          ''');
+        },
+        onWebResourceError: (error) {
+          print("==> WebView erreur : ${error.description} - ${error.errorCode}");
+        },
+        onHttpError: (error) {
+          print("==> WebView HTTP erreur : ${error.response?.statusCode}");
+        },
+      ))
+      // ← Charge directement l'URL complète retournée par le backend
+      ..loadRequest(Uri.parse(widget.paiementUrl));
+  }
+
+ /* void _checkUrl(String url) {
+    if (_handled) return;
+    print("==> Vérification URL : $url");
+
+    // ← Webhook de succès : /api/paiements/webhook/?status=approved
+    if (url.contains('status=approved') ||
+        url.contains('webhook') && url.contains('approved')) {
+      _handled = true;
+      Navigator.pop(context);
+      widget.onSuccess();
       return;
     }
 
-    if (_selectedMode == 0) {
-      // Paiement en ligne
-      final success = await provider.effectuerPaiement(
-        uniteId: id,
-        montant: _montant,
-        modePaiement: _paymentOptions[_selectedPayment]['code'],
-        numeroPaiement: _phoneController.text.trim(),
-        typePaiement: _selectedMainTab == 0 ? 'avance' : 'loyer',
-        demandeId: _demandeId,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success ? 'Paiement effectué !' : 'Erreur : ${provider.error}'),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ));
-      if (success) {
-        // Bloque l'avance si on vient de payer l'avance
-        if (_selectedMainTab == 0) setState(() => _aDejaPayeAvance = true);
-        Navigator.pop(context);
-      }
-    } else {
-      // Paiement en espèce
-      final success = await provider.demanderPaiementEspece(
-        uniteId: id,
-        montant: _montant,
-        typePaiement: _selectedMainTab == 0 ? 'avance' : 'loyer',
-        demandeId: _demandeId,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success
-            ? 'Demande envoyée ! En attente de confirmation du propriétaire.'
-            : 'Erreur : ${provider.error}'),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ));
-      if (success) {
-        if (_selectedMainTab == 0) setState(() => _aDejaPayeAvance = true);
-        Navigator.pop(context);
-      }
+    // ← Échec ou annulation
+    if (url.contains('status=failed') ||
+        url.contains('status=cancelled') ||
+        url.contains('status=canceled')) {
+      _handled = true;
+      Navigator.pop(context);
+      widget.onFailure();
     }
+  }*/
+
+  void _checkUrl(String url) {
+  if (_handled) return;
+  print("==> Vérification URL : $url");
+
+  // ← Succès : webhook avec status approved
+  if (url.contains('status=approved') ||
+      (url.contains('webhook') && url.contains('approved')) ||
+      url.contains('paiement_success') ||
+      url.contains('payment_success')) {
+    _handled = true;
+    Navigator.pop(context);
+    widget.onSuccess();
+    return;
+  }
+
+  // ← Échec ou annulation — NE PAS détecter /menu comme un échec
+  if ((url.contains('status=failed') ||
+       url.contains('status=cancelled') ||
+       url.contains('status=canceled') ||
+       url.contains('paiement_failed') ||
+       url.contains('payment_failed')) &&
+      !url.contains('sandbox-process.fedapay.com/menu')) {
+    _handled = true;
+    Navigator.pop(context);
+    widget.onFailure();
+  }
+}
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A3C6E),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                title: const Text('Annuler le paiement ?'),
+                content: const Text('Si vous fermez cette page, votre paiement ne sera pas effectué.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Continuer'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // ferme dialog
+                      Navigator.pop(context); // ferme WebView
+                      widget.onFailure();
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: const Text('Annuler', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        title: const Text('Paiement sécurisé',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+        actions: [
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              ),
+            ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          WebViewWidget(controller: _controller),
+          if (_loading)
+            const Center(child: CircularProgressIndicator()),
+        ],
+      ),
+    );
   }
 }

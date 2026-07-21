@@ -351,6 +351,27 @@ Future<Utilisateur> modifierProfil({
   }
 }
 
+Future<Map<String, dynamic>> getInfosSupplementairesBackend() async {
+  try {
+    final response = await _dio.get('/api/comptes/profil/');
+    final data = response.data;
+    return {
+      'filiere': data['filiere'] ?? '',
+      'ville': data['ville'] ?? '',
+      'religion': data['religion'] ?? '',
+      'telephone': data['telephone_coloc'] ?? '',
+      'description': data['description_coloc'] ?? '',
+      'fumeur': data['fumeur'] ?? false,
+      'brutal': data['brutal'] ?? false,
+    };
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
 Future<void> envoyerTokenFCM(String token) async {
   try {
     final response = await _dio.post(

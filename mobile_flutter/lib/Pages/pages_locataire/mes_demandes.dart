@@ -4,6 +4,7 @@ import 'package:mobile_flutter/Pages/pages_locataire/locataire_navbar.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_flutter/service/locataire/api_locataire.dart'; 
+import 'package:mobile_flutter/Config/app_config.dart'; // ← Import de AppConfig pour kBaseUrl
 
 class MesDemandesPage extends StatefulWidget {
   const MesDemandesPage({super.key});
@@ -21,7 +22,7 @@ Widget _buildUniteImage(String? photoPath, IconData fallbackIcon) {
   }
   final fullUrl = photoPath.startsWith('http')
       ? photoPath
-      : '$kBaseUrl$photoPath';
+      : '${AppConfig.baseUrl}$photoPath';
   return ClipRRect(
     borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
     child: Image.network(

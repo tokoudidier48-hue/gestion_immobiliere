@@ -115,6 +115,25 @@ class _ProfilCompletionCheckerState extends State<ProfilCompletionChecker> {
     );
     _dialogShowing = false;
   }
+  // Dans le checker, remplace la vérification locale par :
+Future<bool> _verifierProfilComplet() async {
+  // 1. Vérifie localement d'abord
+  final localComplet = await LocalStorage.getProfilComplete();
+  if (localComplet) return true;
+
+  // 2. Vérifie via les infos locales
+  final infos = await LocalStorage.getInfosSupplementaires();
+  final filiere = infos['filiere'] ?? '';
+  final ville = infos['ville'] ?? '';
+  final telephone = infos['telephone'] ?? '';
+  final description = infos['description'] ?? '';
+
+  final complet = filiere.isNotEmpty && ville.isNotEmpty &&
+      telephone.isNotEmpty && description.isNotEmpty;
+
+  if (complet) await LocalStorage.setProfilComplete(true);
+  return complet;
+}
 
   @override
   Widget build(BuildContext context) => widget.child;

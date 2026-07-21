@@ -6,6 +6,8 @@ import 'package:mobile_flutter/Pages/pages_locataire/modificationProfilLocataire
 import 'package:mobile_flutter/Pages/pages_locataire/notification_locataire.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/trouver_colocataire.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
+import 'package:mobile_flutter/provider/provider_profil.dart';
+import 'package:mobile_flutter/service/websocket_service.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_flutter/widgets/widget_locataire/profil_completion_checker.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
@@ -48,13 +50,23 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      context.read<UniteDProvider>().fetchUnitesDisponibles();
-      context.read<NotificationProvider>().fetchNotifications();
-      context.read<DemandeProvider>().fetchDemandes();
-      // ← Connecte WebSocket + Provider au stream
-      context.read<MessageProvider>().connecterWebSocket();
-      context.read<MessageProvider>().fetchConversations();
+    Future.microtask(() async {
+      try {
+        context.read<UniteDProvider>().fetchUnitesDisponibles();
+        context.read<NotificationProvider>().fetchNotifications();
+
+        // ← Synchronise les infos supplémentaires depuis le backend
+      await context.read<ProfilProvider>().fetchEtSauvegarderInfosSupp();
+        // ← Connexion WS protégée
+        webSocketService.reset();
+        await webSocketService.connect();
+        // ← Abonne le MessageProvider au stream WS
+        if (mounted) {
+          context.read<MessageProvider>().connecterWebSocket();
+        }
+      } catch (e) {
+        print("==> Erreur initState AccueilLocataire : $e");
+      }
     });
   }
 
@@ -489,6 +501,26 @@ class _AccueilLocatairePageState extends State<AccueilLocatairePage> {
                         },
                         icon: const Icon(Icons.person_add_outlined, size: 16),
                         label: const Text('TROUVER UN COLOCATAIRE', style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A3C6E),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => DetailsLogementPage(unite: u)),
+                          );
+                        },
+                        icon: const Icon(Icons.request_quote_outlined, size: 16),
+                        label: const Text('ENVOYER UNE DEMANDE DE CHAMBRE', style: TextStyle(fontSize: 12)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1A3C6E),
                           foregroundColor: Colors.white,

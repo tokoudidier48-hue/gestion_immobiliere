@@ -182,3 +182,70 @@ class UniteProvider extends ChangeNotifier {
 }
 
 }
+
+
+class FinanceProvider extends ChangeNotifier {
+  final ApiProprietaire _api = ApiProprietaire();
+
+  double _solde = 0;
+  bool _isLoading = false;
+  bool _isRetrait = false;
+  String? _error;
+  List<dynamic> _historiqueRetraits = [];
+
+  double get solde => _solde;
+  bool get isLoading => _isLoading;
+  bool get isRetrait => _isRetrait;
+  String? get error => _error;
+  List<dynamic> get historiqueRetraits => _historiqueRetraits;
+
+  Future<void> fetchSolde() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final data = await _api.getSolde();
+      _solde = (data['solde'] as num).toDouble();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>?> demanderRetrait({
+    required double montant,
+    required String telephone,
+    required String operateur,
+  }) async {
+    _isRetrait = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final result = await _api.demanderRetrait(
+        montant: montant,
+        telephone: telephone,
+        operateur: operateur,
+      );
+      await fetchSolde();
+      await fetchHistoriqueRetraits();
+      return result;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      return null;
+    } finally {
+      _isRetrait = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchHistoriqueRetraits() async {
+    try {
+      _historiqueRetraits = await _api.getHistoriqueRetraits();
+      notifyListeners();
+    } catch (e) {
+      print("==> Erreur historique retraits : $e");
+    }
+  }
+}

@@ -833,6 +833,40 @@ Widget _buildColocataireCard(BuildContext context) {
                           : messageController.text.trim(),
                     );
                     if (!context.mounted) return;
+
+                    if (success) {
+                      // ← Envoie un message automatique au propriétaire
+                      final proprietaireId = widget.unite['proprietaire'];
+                      final titre = widget.unite['nom'] ?? 'Sans titre';
+                      final prix = widget.unite['loyer']?.toString() ?? '0';
+                      final adresse = '${widget.unite['ville'] ?? ''}, ${widget.unite['adresse'] ?? ''}';
+                      final type = (widget.unite['type_unite'] ?? '').toString().replaceAll('_', ' ');
+                      final type_caution = (widget.unite['type_caution'] ?? '').toString().replaceAll('_', ' ');
+                      final prix_caution = widget.unite['prix_caution']?.toString() ?? '0';
+                      final nombre_avances = widget.unite['nombre_avances'] ?? 0;
+
+                      final messageText = '''📋 Nouvelle demande de chambre reçue
+
+🏠 Logement: $titre
+📍 Adresse: $adresse
+🏷️ Type: $type
+💰 Loyer: $prix FCFA/mois
+⏳ Nombre d\'avances: $nombre_avances
+🔐 Caution: $type_caution - $prix_caution FCFA
+${messageController.text.trim().isNotEmpty ? '\n💬 Message du locataire: ${messageController.text.trim()}' : ''}''';
+
+                      try {
+                        final messageProvider = context.read<MessageProvider>();
+                        final conversationId = await messageProvider.getOuCreerConversation(
+                          proprietaireId,
+                          uniteId: uniteId,
+                        );
+                        await messageProvider.envoyerMessageDirect(conversationId, messageText);
+                      } catch (e) {
+                        print('==> Erreur envoi message auto: $e');
+                      }
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(success

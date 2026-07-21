@@ -114,5 +114,14 @@ static Future<Map<String, dynamic>> getInfosSupplementaires() async {
   };
 }
 
+static Future<bool> getProfilComplete() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('profil_complet') ?? false;
+}
+
+/*static Future<void> setProfilComplete(bool value) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('profil_complet', value);
+}*/
 }
 

@@ -61,6 +61,7 @@ dependencies:
   http: ^1.2.1
   record: ^6.2.0
   web_socket_channel: ^3.0.3
+  webview_flutter: ^4.13.1
 
 dev_dependencies:
   flutter_test:

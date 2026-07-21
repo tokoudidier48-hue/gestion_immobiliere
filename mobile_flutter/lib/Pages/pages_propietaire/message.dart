@@ -191,20 +191,22 @@ class _MessagesPageState extends State<MessagesPage> {
         .map((e) => e[0].toUpperCase())
         .join();
 
-    return InkWell(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ConversationDetailPage(
-            conversationId: convId,
-            autreUserId: autreUserId,
-            nom: nom,
-            role: role,
-            initiales: initiales.isEmpty ? '?' : initiales,
+    // Dans _buildConversationTile de _MessagesPageState :
+      return GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ConversationDetailPage(
+              conversationId: convId,
+              autreUserId: autreUserId,
+              nom: nom,
+              role: role,
+              initiales: initiales.isEmpty ? '?' : initiales,
+            ),
           ),
         ),
-      ),
-      child: Container(
+        onLongPress: () => _confirmerSuppression(context, convId, nom),
+        child: Container(
         color: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -318,6 +320,68 @@ class _MessagesPageState extends State<MessagesPage> {
       ),
     );
   }
+  void _confirmerSuppression(BuildContext context, int convId, String nom) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (_) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            const Icon(Icons.delete_outline, color: Colors.red, size: 40),
+            const SizedBox(height: 12),
+            const Text('Supprimer la conversation',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
+            const SizedBox(height: 8),
+            Text('La conversation avec $nom sera supprimée définitivement.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Annuler'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _messageProvider.supprimerConversation(convId);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Supprimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
   String _formatDate(String date) {
     if (date.isEmpty) return '';
@@ -376,43 +440,75 @@ void initState() {
     if (!mounted) return;
       _messageProvider.setConversationOuverte(widget.conversationId);
       await _messageProvider.fetchMessages(widget.conversationId);
+      _scrollToBottom();
   });
 }
 
 @override
 void dispose() {
-  context.read<MessageProvider>().setConversationOuverte(null);
+  _messageProvider.setConversationOuverte(null);
+
   _msgController.dispose();
   _scrollController.dispose();
+
   super.dispose();
 }
 
+bool _isLoadingMessages = false;
 
-  void _sendMessage() async {
-    final text = _msgController.text.trim();
-    if (text.isEmpty || _isSending) return;
-    _msgController.clear();
+void _sendMessage() async {
+  final text = _msgController.text.trim();
+
+  if (text.isEmpty || _isSending) return;
+
+  _msgController.clear();
+
+  if (mounted) {
     setState(() => _isSending = true);
+  }
 
-    await context.read<MessageProvider>().envoyerMessageDirect(
+  _messageProvider.ajouterMessageLocal({
+    'id': null,
+    'contenu': text,
+    'expediteur': int.tryParse(_currentUserId) ?? 0,
+    'date_envoi': DateTime.now().toIso8601String(),
+  });
+
+  _scrollToBottom();
+
+  try {
+    await _messageProvider.envoyerMessageDirect(
       widget.conversationId,
       text,
     );
 
-    setState(() => _isSending = false);
+    if (!_isLoadingMessages) {
+      _isLoadingMessages = true;
+      await _messageProvider.fetchMessages(widget.conversationId);
+      _isLoadingMessages = false;
+    }
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    _scrollToBottom();
+  } finally {
+    if (mounted) {
+      setState(() => _isSending = false);
+    }
   }
+}
 
-  void _showMessageOptions(int messageId, String contenuActuel) {
+void _scrollToBottom() {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  });
+}
+
+void _showMessageOptions(int messageId, String contenuActuel) {
   showModalBottomSheet(
     context: context,
     shape: const RoundedRectangleBorder(
@@ -442,7 +538,7 @@ void dispose() {
                 style: TextStyle(color: Colors.red)),
             onTap: () async {
               Navigator.pop(context);
-              await context.read<MessageProvider>().supprimerMessage(messageId);
+              await _messageProvider.supprimerMessage(messageId); // ← remplacé
             },
           ),
           const SizedBox(height: 8),
@@ -483,7 +579,7 @@ void _showModifierDialog(int messageId, String contenuActuel) {
               return;
             }
             Navigator.pop(ctx);
-            await context.read<MessageProvider>().modifierMessage(messageId, newText);
+            await _messageProvider.modifierMessage(messageId, newText); // ← remplacé
           },
           style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1565C0)),
@@ -557,12 +653,6 @@ void _showModifierDialog(int messageId, String contenuActuel) {
                   );
                 }
 
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scrollController.hasClients) {
-                    _scrollController.jumpTo(
-                        _scrollController.position.maxScrollExtent);
-                  }
-                });
 
                 return ListView.builder(
                   controller: _scrollController,

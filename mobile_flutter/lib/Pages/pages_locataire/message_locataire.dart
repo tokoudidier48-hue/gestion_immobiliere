@@ -26,6 +26,69 @@ class _MessageLocatairePageState extends State<MessageLocatairePage> {
     });
   }
 
+  void _confirmerSuppression(BuildContext context, int convId, String nom) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (_) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            const Icon(Icons.delete_outline, color: Colors.red, size: 40),
+            const SizedBox(height: 12),
+            Text('Supprimer la conversation',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
+            const SizedBox(height: 8),
+            Text('La conversation avec $nom sera supprimée définitivement.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Annuler'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await context.read<MessageProvider>().supprimerConversation(convId);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Supprimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
   Map<String, dynamic> _getAutreParticipant(dynamic conv) {
     final participants = (conv['participants'] as List?) ?? [];
     try {
@@ -151,6 +214,90 @@ class _MessageLocatairePageState extends State<MessageLocatairePage> {
   }
 
   Widget _buildConversationTile(BuildContext context, dynamic conv) {
+  final convId = conv['id'];
+  final autre = _getAutreParticipant(conv);
+  final autreUserId = autre['id'] ?? 0;
+  final nom = _getNomComplet(autre);
+  final role = autre['role'] ?? '';
+  final dernierMsgMap = conv['dernier_message'];
+  final dernierMessage = dernierMsgMap is Map ? (dernierMsgMap['contenu'] ?? '') : (dernierMsgMap?.toString() ?? '');
+  final dernierMsgDate = dernierMsgMap is Map ? (dernierMsgMap['date'] ?? '') : (conv['date_dernier_message'] ?? '');
+  final time = _formatDate(dernierMsgDate);
+  final nonLus = conv['non_lus'] ?? 0;
+  final bool hasUnread = nonLus > 0;
+  final initiales = [autre['first_name'] ?? '', autre['last_name'] ?? '']
+      .where((e) => e.isNotEmpty).map((e) => e[0].toUpperCase()).join();
+
+  return GestureDetector(
+    onTap: () => Navigator.push(context, MaterialPageRoute(
+      builder: (_) => ChatPage(
+        conversationId: convId,
+        autreUserId: autreUserId,
+        name: nom,
+        role: role,
+        initiales: initiales.isEmpty ? '?' : initiales,
+        color: kLocataireBlue,
+      ),
+    )),
+    onLongPress: () => _confirmerSuppression(context, convId, nom),
+    child: Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: kLocataireBlue.withOpacity(0.15),
+            child: Text(initiales.isEmpty ? '?' : initiales,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: kLocataireBlue)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(nom, style: TextStyle(fontSize: 14, fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600, color: Colors.black87)),
+                    ),
+                    if (role.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: kLocataireBlue.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                        child: Text(role == 'proprietaire' ? 'Propriétaire' : 'Locataire', style: const TextStyle(fontSize: 10, color: kLocataireBlue)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(dernierMessage,
+                    style: TextStyle(fontSize: 12, color: hasUnread ? Colors.black87 : Colors.grey.shade500, fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(time, style: TextStyle(fontSize: 11, color: hasUnread ? kLocataireBlue : Colors.grey.shade400)),
+              const SizedBox(height: 4),
+              if (hasUnread)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(12)),
+                  child: Text('$nonLus', style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+  /*Widget _buildConversationTile(BuildContext context, dynamic conv) {
     final convId = conv['id'];
     final autre = _getAutreParticipant(conv);
     final autreUserId = autre['id'] ?? 0;
@@ -241,7 +388,7 @@ class _MessageLocatairePageState extends State<MessageLocatairePage> {
         ),
       ),
     );
-  }
+  }*/
 
   String _formatDate(String date) {
     if (date.isEmpty) return '';
@@ -342,15 +489,31 @@ class _ChatPageState extends State<ChatPage> {
     _scrollToBottom();
 
     try {
-      await context.read<MessageProvider>()
-          .envoyerMessageDirect(widget.conversationId, text);
-      // Sync pour remplacer le message local (id null) par le vrai
-      if (!_isLoadingMessages) {
-        _isLoadingMessages = true;
-        await context.read<MessageProvider>().fetchMessages(widget.conversationId);
-        _isLoadingMessages = false;
-      }
-      _scrollToBottom();
+      await _messageProvider.envoyerMessageDirect(
+    widget.conversationId,
+    text,
+);
+
+if (!mounted) return;
+
+if (!_isLoadingMessages) {
+  _isLoadingMessages = true;
+
+  await _messageProvider.fetchMessages(
+      widget.conversationId);
+
+  _isLoadingMessages = false;
+}
+
+if (!mounted) return;
+
+_scrollToBottom();
+
+if (mounted) {
+  setState(() {
+    _isSending = false;
+  });
+}
     } finally {
       if (mounted) setState(() => _isSending = false);
     }

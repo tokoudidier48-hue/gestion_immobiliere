@@ -98,6 +98,7 @@ class UtilisateurProvider with ChangeNotifier {
     _token = null;
     _error = null;
     webSocketService.disconnect();
+    webSocketService.reset();
     SessionService.stop();
     await LocalStorage.saveToken('');
     await LocalStorage.setFirstLaunch(false);

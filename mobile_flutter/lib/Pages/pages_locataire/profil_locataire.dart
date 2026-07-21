@@ -8,6 +8,7 @@ import 'package:mobile_flutter/Pages/a_propos.dart';
 import 'package:mobile_flutter/provider/auth_provider.dart';
 import 'package:mobile_flutter/provider/provider_profil.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
+import 'package:mobile_flutter/service/locataire/api_locataire.dart';
 import 'package:mobile_flutter/service/session_service.dart';
 import 'package:provider/provider.dart';
 
@@ -28,6 +29,126 @@ class _ProfilLocatairePageState extends State<ProfilLocatairePage> {
     );
   }
 
+void _showSupprimerCompteDialog(BuildContext context) {
+  final passwordController = TextEditingController();
+  bool _obscure = true;
+
+  showDialog(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+            SizedBox(width: 8),
+            Text('Supprimer le compte', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: const Text(
+                '⚠️ Cette action est irréversible. Toutes vos données (demandes, paiements, messages) seront définitivement supprimées.',
+                style: TextStyle(fontSize: 12, color: Colors.red, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Confirmez avec votre mot de passe :',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: passwordController,
+              obscureText: _obscure,
+              decoration: InputDecoration(
+                hintText: 'Mot de passe',
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility, size: 20),
+                  onPressed: () => setDialogState(() => _obscure = !_obscure),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final password = passwordController.text.trim();
+              if (password.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Veuillez entrer votre mot de passe')),
+                );
+                return;
+              }
+              Navigator.pop(ctx);
+              await _supprimerCompte(password);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _supprimerCompte(String password) async {
+  try {
+    final api = ApiLocataire();
+    await api.supprimerCompte(password);
+
+    await LocalStorage.clearAll();
+    SessionService.stop();
+
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const Connexion()),
+      (route) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Compte supprimé avec succès'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+    final msg = e.toString().replaceAll('Exception: ', '');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Erreur : $msg'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,6 +317,26 @@ class _ProfilLocatairePageState extends State<ProfilLocatairePage> {
                 ),
 
                 const SizedBox(height: 20),
+
+                // ── SUPPRESSION COMPTE ────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: OutlinedButton.icon(
+                  onPressed: () => _showSupprimerCompteDialog(context),
+                  icon: const Icon(Icons.delete_forever, color: Colors.red, size: 18),
+                  label: const Text(
+                    'Supprimer définitivement mon compte',
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                    side: const BorderSide(color: Colors.red, width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Colors.red.shade50,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
 
                 // ── DÉCONNEXION ──────────────────────────────────────────
                 Padding(

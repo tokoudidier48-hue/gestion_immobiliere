@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:mobile_flutter/model/utilisateur.dart';
 import 'package:mobile_flutter/provider/provider_profil.dart';
+import 'package:mobile_flutter/service/auth/api.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
 import 'package:provider/provider.dart';
 
@@ -44,20 +45,51 @@ class _ModificationProfilLocatairePageState
     _loadInfosSupplementaires();
   }
 
-  Future<void> _loadInfosSupplementaires() async {
-    final infos = await LocalStorage.getInfosSupplementaires();
-    if (!mounted) return;
+ Future<void> _loadInfosSupplementaires() async {
+  // 1. Charge d'abord le local (rapide)
+  final infosLocales = await LocalStorage.getInfosSupplementaires();
+  if (mounted) {
     setState(() {
-      _filiereController.text = infos['filiere'] ?? '';
-      _villeController.text = infos['ville'] ?? '';
-      _religionController.text = infos['religion'] ?? '';
-      _telephoneColocController.text = infos['telephone'] ?? '';
-      _descriptionController.text = infos['description'] ?? '';
-      _fumeur = infos['fumeur'] ?? false;
-      _brutal = infos['brutal'] ?? false;
+      _filiereController.text = infosLocales['filiere'] ?? '';
+      _villeController.text = infosLocales['ville'] ?? '';
+      _religionController.text = infosLocales['religion'] ?? '';
+      _telephoneColocController.text = infosLocales['telephone'] ?? '';
+      _descriptionController.text = infosLocales['description'] ?? '';
+      _fumeur = infosLocales['fumeur'] ?? false;
+      _brutal = infosLocales['brutal'] ?? false;
       _infosLoaded = true;
     });
   }
+
+  // 2. Puis synchronise depuis le backend (actualise si différent)
+  try {
+    final api = ApiService();
+    final infosBackend = await api.getInfosSupplementairesBackend();
+
+    // Sauvegarde localement
+    await LocalStorage.saveInfosSupplementaires(infosBackend);
+
+    if (mounted) {
+      setState(() {
+        // N'écrase que si le backend a des données non vides
+        if ((infosBackend['filiere'] ?? '').isNotEmpty)
+          _filiereController.text = infosBackend['filiere'];
+        if ((infosBackend['ville'] ?? '').isNotEmpty)
+          _villeController.text = infosBackend['ville'];
+        if ((infosBackend['religion'] ?? '').isNotEmpty)
+          _religionController.text = infosBackend['religion'];
+        if ((infosBackend['telephone'] ?? '').isNotEmpty)
+          _telephoneColocController.text = infosBackend['telephone'];
+        if ((infosBackend['description'] ?? '').isNotEmpty)
+          _descriptionController.text = infosBackend['description'];
+        _fumeur = infosBackend['fumeur'] ?? _fumeur;
+        _brutal = infosBackend['brutal'] ?? _brutal;
+      });
+    }
+  } catch (e) {
+    print("==> Erreur sync backend : $e");
+  }
+}
 
   @override
   void dispose() {

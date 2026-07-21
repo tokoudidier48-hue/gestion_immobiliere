@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:mobile_flutter/service/local_storage.dart';
 import 'package:mobile_flutter/Config/app_config.dart';
-const String kBaseUrl = 'http://10.190.5.129:8000';
+//const String kBaseUrl = '${AppConfig.baseUrl}';
 class ApiLocataire {
   final Dio _dio;
 
@@ -242,6 +242,35 @@ Future<dynamic?> getRecuParPaiement(int paiementId) async {
   }
 }
 
+Future<Map<String, dynamic>> getDetailPaiement(int paiementId) async {
+  try {
+    final response = await _dio.get('/api/paiements/paiements/$paiementId/');
+    print("==> Détail paiement $paiementId : ${response.data}");
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<Map<String, dynamic>> verifierStatutPaiement(int paiementId) async {
+  try {
+    final response = await _dio.post(
+      '/api/paiements/paiements/$paiementId/verifier-statut/',
+    );
+    print("==> Statut vérifié : ${response.data}");
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+
 Future<String> getRecuPdfUrl(int recuId) async {
   try {
     // 1. Essaie d'abord de télécharger directement
@@ -314,7 +343,8 @@ Future<String?> getUrlRecuPdf(int recuId) async {
 // Télécharge depuis une URL complète
 Future<List<int>> downloadPdfFromUrl(String url) async {
   try {
-    final fullUrl = url.startsWith('http') ? url : 'http://10.122.254.129:8000$url';
+    // ← Remplace l'IP hardcodée par AppConfig.baseUrl
+    final fullUrl = url.startsWith('http') ? url : '${AppConfig.baseUrl}$url';
     print("==> Téléchargement PDF depuis : $fullUrl");
     final response = await _dio.get(
       fullUrl,
@@ -353,20 +383,29 @@ Future<List<int>> downloadPdfFromUrl(String url) async {
 
   // URL correcte avec query param
   Future<List<dynamic>> getMessages(int conversationId) async {
-    try {
-      final response = await _dio.get(
-        '/api/messagerie/messages/',
-        queryParameters: {'conversation': conversationId},
-      );
-      print("==> Messages conversation $conversationId : ${response.data}");
-      return response.data as List;
-    } on DioException catch (e) {
-      if (e.response != null) throw Exception(e.response?.data);
-      throw Exception('Failed: $e');
-    } catch (e) {
-      throw Exception('Failed: $e');
+  try {
+    final response = await _dio.get(
+      '/api/messagerie/messages/',
+      queryParameters: {'conversation': conversationId},
+    );
+    // ← Vérifie que c'est bien une liste JSON, pas du HTML
+    if (response.data is! List) {
+      print("==> Réponse inattendue (pas une liste) : ${response.data.runtimeType}");
+      throw Exception('Réponse serveur invalide');
     }
+    return response.data as List;
+  } on DioException catch (e) {
+    print("==> Erreur réseau getMessages : ${e.type} - ${e.message}");
+    if (e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout) {
+      throw Exception('Connexion au serveur perdue. Vérifiez votre réseau.');
+    }
+    if (e.response != null) throw Exception('Erreur serveur');
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
   }
+}
 
   Future<Response> envoyerMessage(int conversationId, String contenu) async {
     try {
@@ -445,6 +484,18 @@ Future<Response> modifierMessage(int messageId, String nouveauContenu) async {
     );
     print("==> Message modifié : ${response.data}");
     return response;
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<void> supprimerConversation(int conversationId) async {
+  try {
+    await _dio.delete('/api/messagerie/conversations/$conversationId/');
+    print("==> Conversation supprimée : $conversationId");
   } on DioException catch (e) {
     if (e.response != null) throw Exception(e.response?.data);
     throw Exception('Failed: $e');
@@ -714,5 +765,58 @@ Future<List<dynamic>> getMessagesIA(int conversationId) async {
   }
 }
 
+// ── PAIEMENT FEDAPAY ──────────────────────────────────────────────────────
 
+Future<Map<String, dynamic>> initierPaiement({
+  required int uniteId,
+  required int? demandeId,
+  required String typePaiement,
+  required String modePaiement,
+  required double montant,
+  required String numeroPaiement,
+}) async {
+  try {
+    final now = DateTime.now();
+    final response = await _dio.post(
+      '/api/paiements/initier-paiement/',
+      data: {
+        'unite': uniteId,
+        if (demandeId != null) 'demande': demandeId,
+        'type_paiement': typePaiement,
+        'mode_paiement': modePaiement,
+        'montant': montant.toInt(),
+        'numero_paiement': numeroPaiement,
+        'periode_debut':
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-01',
+        'periode_fin':
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-30',
+      },
+    );
+    print("==> Paiement initié : ${response.data}");
+    return response.data as Map<String, dynamic>;
+  } on DioException catch (e) {
+    if (e.response != null) {
+      print("==> Erreur initierPaiement : ${e.response?.data}");
+      throw Exception(e.response?.data);
+    }
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
+
+Future<void> supprimerCompte(String password) async {
+  try {
+    await _dio.delete(
+      '/api/comptes/supprimer-compte/',
+      data: {'password': password},
+    );
+    print("==> Compte supprimé");
+  } on DioException catch (e) {
+    if (e.response != null) throw Exception(e.response?.data);
+    throw Exception('Failed: $e');
+  } catch (e) {
+    throw Exception('Failed: $e');
+  }
+}
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/Pages/pages_locataire/paiement.dart';
 import 'package:mobile_flutter/provider/locataire_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:mobile_flutter/Config/app_config.dart';
 
 class DetailsLogementDepuisDemandePage extends StatefulWidget {
   final dynamic demande;
@@ -26,7 +26,7 @@ class _DetailsLogementDepuisDemandePage
     final uniteId = d['unite'];
     final demandeId = d['id'];
     final photoPath = d['unite_photo']?.toString() ?? '';
-    const baseUrl = 'http://10.199.70.129:8000';
+    const baseUrl = AppConfig.baseUrl; // ← Utilise la constante depuis AppConfig
     final fullImageUrl = photoPath.isNotEmpty
         ? (photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath')
         : '';
